@@ -4,6 +4,7 @@ const state = {
     currentTestament: 'Old',
     currentBook: null,
     currentChapter: null,
+    totalChapters: 0,
     verses: [],
     selectedVerses: new Set(),
 };
@@ -20,6 +21,11 @@ const chaptersGrid = $('#chapters-grid');
 const versesContent = $('#verses-content');
 const shareFab = $('#share-fab');
 const toast = $('#toast');
+const prevChapterBtn = $('#prev-chapter');
+const nextChapterBtn = $('#next-chapter');
+const prevLabel = $('#prev-label');
+const nextLabel = $('#next-label');
+const chapterIndicator = $('#chapter-indicator');
 
 // ===== API =====
 async function fetchJSON(url) {
@@ -106,6 +112,7 @@ async function loadChapters(bookIndex) {
     chaptersGrid.innerHTML = '<div class="loader">불러오는 중...</div>';
     try {
         const chapters = await fetchJSON(`/api/books/${bookIndex}/chapters`);
+        state.totalChapters = chapters.length;
         chaptersGrid.innerHTML = chapters.map(c => `
       <button class="chapter-btn" data-chapter="${c.chapter}">
         ${c.chapter}
@@ -130,6 +137,8 @@ async function loadVerses(bookIndex, chapter) {
     try {
         state.verses = await fetchJSON(`/api/books/${bookIndex}/chapters/${chapter}`);
         renderVerses();
+        updateChapterNav();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
         versesContent.innerHTML = `<div class="loader">오류: ${err.message}</div>`;
     }
@@ -161,6 +170,33 @@ function renderVerses() {
         });
     });
 }
+
+// ===== Chapter Navigation =====
+function updateChapterNav() {
+    const ch = state.currentChapter;
+    const total = state.totalChapters;
+
+    prevChapterBtn.disabled = ch <= 1;
+    nextChapterBtn.disabled = ch >= total;
+
+    prevLabel.textContent = ch > 1 ? `${ch - 1}장` : '이전';
+    nextLabel.textContent = ch < total ? `${ch + 1}장` : '다음';
+    chapterIndicator.textContent = `${ch} / ${total}`;
+}
+
+prevChapterBtn.addEventListener('click', () => {
+    if (state.currentChapter > 1) {
+        state.currentChapter -= 1;
+        loadVerses(state.currentBook.bookIndex, state.currentChapter);
+    }
+});
+
+nextChapterBtn.addEventListener('click', () => {
+    if (state.currentChapter < state.totalChapters) {
+        state.currentChapter += 1;
+        loadVerses(state.currentBook.bookIndex, state.currentChapter);
+    }
+});
 
 // ===== Verse Selection =====
 function toggleVerse(verseNum) {
