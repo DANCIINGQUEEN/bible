@@ -138,6 +138,12 @@ body {
   flex-shrink: 0;
 }
 
+.header-btn svg,
+.settings-close-btn svg,
+.fab svg {
+  pointer-events: none;
+}
+
 .header-btn:hover {
   background: rgba(255, 255, 255, 0.08);
 }
