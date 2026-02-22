@@ -131,17 +131,63 @@ async function loadChapters(bookIndex) {
 }
 
 // ===== Load Verses =====
-async function loadVerses(bookIndex, chapter) {
+const versesCache = {};
+
+async function loadVerses(bookIndex, chapter, direction) {
     navigateTo('verses');
-    versesContent.innerHTML = '<div class="loader">불러오는 중...</div>';
-    try {
-        state.verses = await fetchJSON(`/api/books/${bookIndex}/chapters/${chapter}`);
+
+    // 애니메이션 방향 결정
+    if (direction) {
+        const slideOut = direction === 'next' ? 'slide-out-left' : 'slide-out-right';
+        const slideIn = direction === 'next' ? 'slide-in-right' : 'slide-in-left';
+        versesContent.classList.add(slideOut);
+        await new Promise(r => setTimeout(r, 200));
+        versesContent.classList.remove(slideOut);
+        versesContent.classList.add(slideIn);
+        // slideIn 끝나면 클래스 제거
+        setTimeout(() => versesContent.classList.remove(slideIn), 300);
+    }
+
+    const cacheKey = `${bookIndex}-${chapter}`;
+
+    if (versesCache[cacheKey]) {
+        state.verses = versesCache[cacheKey];
         renderVerses();
         updateChapterNav();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-        versesContent.innerHTML = `<div class="loader">오류: ${err.message}</div>`;
+        window.scrollTo({ top: 0 });
+    } else {
+        versesContent.innerHTML = '<div class="loader">불러오는 중...</div>';
+        try {
+            state.verses = await fetchJSON(`/api/books/${bookIndex}/chapters/${chapter}`);
+            versesCache[cacheKey] = state.verses;
+            renderVerses();
+            updateChapterNav();
+            window.scrollTo({ top: 0 });
+        } catch (err) {
+            versesContent.innerHTML = `<div class="loader">오류: ${err.message}</div>`;
+        }
     }
+
+    // 인접 장 프리페치
+    prefetchChapter(bookIndex, chapter - 1);
+    prefetchChapter(bookIndex, chapter + 1);
+}
+
+async function prefetchChapter(bookIndex, chapter) {
+    if (chapter < 1 || chapter > state.totalChapters) return;
+    const cacheKey = `${bookIndex}-${chapter}`;
+    if (versesCache[cacheKey]) return;
+    try {
+        versesCache[cacheKey] = await fetchJSON(`/api/books/${bookIndex}/chapters/${chapter}`);
+    } catch (e) { /* 프리페치 실패 무시 */ }
+}
+
+function goToChapter(direction) {
+    const delta = direction === 'next' ? 1 : -1;
+    const nextCh = state.currentChapter + delta;
+    if (nextCh < 1 || nextCh > state.totalChapters) return;
+    state.currentChapter = nextCh;
+    loadVerses(state.currentBook.bookIndex, state.currentChapter, direction);
 }
 
 function renderVerses() {
@@ -184,19 +230,8 @@ function updateChapterNav() {
     chapterIndicator.textContent = `${ch} / ${total}`;
 }
 
-prevChapterBtn.addEventListener('click', () => {
-    if (state.currentChapter > 1) {
-        state.currentChapter -= 1;
-        loadVerses(state.currentBook.bookIndex, state.currentChapter);
-    }
-});
-
-nextChapterBtn.addEventListener('click', () => {
-    if (state.currentChapter < state.totalChapters) {
-        state.currentChapter += 1;
-        loadVerses(state.currentBook.bookIndex, state.currentChapter);
-    }
-});
+prevChapterBtn.addEventListener('click', () => goToChapter('prev'));
+nextChapterBtn.addEventListener('click', () => goToChapter('next'));
 
 // ===== Swipe Navigation =====
 let touchStartX = 0;
@@ -211,17 +246,8 @@ versesView.addEventListener('touchend', (e) => {
     const dx = e.changedTouches[0].clientX - touchStartX;
     const dy = e.changedTouches[0].clientY - touchStartY;
 
-    // 수평 이동이 수직보다 크고, 50px 이상일 때만
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-        if (dx < 0 && state.currentChapter < state.totalChapters) {
-            // 왼쪽 스와이프 → 다음 장
-            state.currentChapter += 1;
-            loadVerses(state.currentBook.bookIndex, state.currentChapter);
-        } else if (dx > 0 && state.currentChapter > 1) {
-            // 오른쪽 스와이프 → 이전 장
-            state.currentChapter -= 1;
-            loadVerses(state.currentBook.bookIndex, state.currentChapter);
-        }
+        goToChapter(dx < 0 ? 'next' : 'prev');
     }
 }, { passive: true });
 
