@@ -411,6 +411,10 @@ body {
   justify-content: flex-end;
 }
 
+[data-bottom-align="true"] .view.active {
+  width: 100%;
+}
+
 /* ===== Views ===== */
 .view {
   display: none;
@@ -472,7 +476,7 @@ body {
 /* ===== Books Grid ===== */
 .books-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
@@ -722,7 +726,7 @@ body {
 /* ===== Responsive ===== */
 @media (min-width: 768px) {
   .books-grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 10px;
   }
 
@@ -749,13 +753,13 @@ body {
   }
 
   .books-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(6, 1fr);
   }
 }
 
 @media (max-width: 480px) {
   .books-grid {
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 6px;
   }
 
