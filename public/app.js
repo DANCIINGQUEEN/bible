@@ -305,6 +305,7 @@ const settingsOverlay = $('#settings-overlay');
 const settingsClose = $('#settings-close');
 const themeToggle = $('#theme-toggle');
 const boldToggle = $('#bold-toggle');
+const bottomAlignToggle = $('#bottom-align-toggle');
 const fontSizeUp = $('#font-size-up');
 const fontSizeDown = $('#font-size-down');
 const fontSizeValue = $('#font-size-value');
@@ -321,6 +322,7 @@ const settings = {
     fontSize: parseInt(localStorage.getItem('bible-fontSize')) || 16,
     bold: localStorage.getItem('bible-bold') === 'true',
     fontFamily: localStorage.getItem('bible-fontFamily') || 'serif',
+    bottomAlign: localStorage.getItem('bible-bottomAlign') === 'true',
 };
 
 function applySettings() {
@@ -341,6 +343,10 @@ function applySettings() {
     fontFamilyOptions.querySelectorAll('.font-option').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.font === settings.fontFamily);
     });
+
+    // Bottom align
+    document.documentElement.setAttribute('data-bottom-align', settings.bottomAlign);
+    bottomAlignToggle.classList.toggle('active', settings.bottomAlign);
 }
 
 function saveSettings() {
@@ -348,6 +354,7 @@ function saveSettings() {
     localStorage.setItem('bible-fontSize', settings.fontSize);
     localStorage.setItem('bible-bold', settings.bold);
     localStorage.setItem('bible-fontFamily', settings.fontFamily);
+    localStorage.setItem('bible-bottomAlign', settings.bottomAlign);
 }
 
 // Open / Close
@@ -408,6 +415,13 @@ fontFamilyOptions.querySelectorAll('.font-option').forEach(btn => {
         applySettings();
         saveSettings();
     });
+});
+
+// Bottom align toggle
+bottomAlignToggle.addEventListener('click', () => {
+    settings.bottomAlign = !settings.bottomAlign;
+    applySettings();
+    saveSettings();
 });
 
 // ===== Init =====

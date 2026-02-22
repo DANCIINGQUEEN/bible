@@ -405,6 +405,12 @@ body {
   min-height: calc(100dvh - var(--header-height));
 }
 
+[data-bottom-align="true"] #main {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
 /* ===== Views ===== */
 .view {
   display: none;
