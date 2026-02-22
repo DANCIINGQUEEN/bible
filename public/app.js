@@ -198,6 +198,33 @@ nextChapterBtn.addEventListener('click', () => {
     }
 });
 
+// ===== Swipe Navigation =====
+let touchStartX = 0;
+let touchStartY = 0;
+
+versesView.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+versesView.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+
+    // 수평 이동이 수직보다 크고, 50px 이상일 때만
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+        if (dx < 0 && state.currentChapter < state.totalChapters) {
+            // 왼쪽 스와이프 → 다음 장
+            state.currentChapter += 1;
+            loadVerses(state.currentBook.bookIndex, state.currentChapter);
+        } else if (dx > 0 && state.currentChapter > 1) {
+            // 오른쪽 스와이프 → 이전 장
+            state.currentChapter -= 1;
+            loadVerses(state.currentBook.bookIndex, state.currentChapter);
+        }
+    }
+}, { passive: true });
+
 // ===== Verse Selection =====
 function toggleVerse(verseNum) {
     if (state.selectedVerses.has(verseNum)) {
