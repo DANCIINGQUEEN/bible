@@ -298,24 +298,118 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// ===== Theme Toggle =====
+// ===== Settings Panel =====
+const settingsBtn = $('#settings-btn');
+const settingsPanel = $('#settings-panel');
+const settingsOverlay = $('#settings-overlay');
+const settingsClose = $('#settings-close');
 const themeToggle = $('#theme-toggle');
+const boldToggle = $('#bold-toggle');
+const fontSizeUp = $('#font-size-up');
+const fontSizeDown = $('#font-size-down');
+const fontSizeValue = $('#font-size-value');
+const fontFamilyOptions = $('#font-family-options');
 
-function initTheme() {
-    const saved = localStorage.getItem('bible-theme');
-    if (saved) {
-        document.documentElement.setAttribute('data-theme', saved);
-    }
-    // 저장값 없으면 다크(기본)
+const FONT_MAP = {
+    serif: "'Noto Serif KR', serif",
+    sans: "'Noto Sans KR', sans-serif",
+    pretendard: "'Pretendard', 'Noto Sans KR', sans-serif",
+};
+
+const settings = {
+    theme: localStorage.getItem('bible-theme') || 'dark',
+    fontSize: parseInt(localStorage.getItem('bible-fontSize')) || 16,
+    bold: localStorage.getItem('bible-bold') === 'true',
+    fontFamily: localStorage.getItem('bible-fontFamily') || 'serif',
+};
+
+function applySettings() {
+    // Theme
+    document.documentElement.setAttribute('data-theme', settings.theme);
+    themeToggle.classList.toggle('active', settings.theme === 'dark');
+
+    // Font size
+    versesContent.style.fontSize = settings.fontSize + 'px';
+    fontSizeValue.textContent = settings.fontSize;
+
+    // Bold
+    versesContent.style.fontWeight = settings.bold ? '700' : '400';
+    boldToggle.classList.toggle('active', settings.bold);
+
+    // Font family
+    versesContent.style.fontFamily = FONT_MAP[settings.fontFamily];
+    fontFamilyOptions.querySelectorAll('.font-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.font === settings.fontFamily);
+    });
 }
 
+function saveSettings() {
+    localStorage.setItem('bible-theme', settings.theme);
+    localStorage.setItem('bible-fontSize', settings.fontSize);
+    localStorage.setItem('bible-bold', settings.bold);
+    localStorage.setItem('bible-fontFamily', settings.fontFamily);
+}
+
+// Open / Close
+function openSettings() {
+    settingsPanel.classList.remove('hidden');
+    settingsOverlay.classList.remove('hidden');
+}
+function closeSettings() {
+    settingsPanel.classList.add('hidden');
+    settingsOverlay.classList.add('hidden');
+}
+
+settingsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (settingsPanel.classList.contains('hidden')) {
+        openSettings();
+    } else {
+        closeSettings();
+    }
+});
+settingsClose.addEventListener('click', closeSettings);
+settingsOverlay.addEventListener('click', closeSettings);
+
+// Theme toggle
 themeToggle.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('bible-theme', next);
+    settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
+    applySettings();
+    saveSettings();
+});
+
+// Font size
+fontSizeUp.addEventListener('click', () => {
+    if (settings.fontSize < 24) {
+        settings.fontSize += 1;
+        applySettings();
+        saveSettings();
+    }
+});
+fontSizeDown.addEventListener('click', () => {
+    if (settings.fontSize > 12) {
+        settings.fontSize -= 1;
+        applySettings();
+        saveSettings();
+    }
+});
+
+// Bold toggle
+boldToggle.addEventListener('click', () => {
+    settings.bold = !settings.bold;
+    applySettings();
+    saveSettings();
+});
+
+// Font family
+fontFamilyOptions.querySelectorAll('.font-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+        settings.fontFamily = btn.dataset.font;
+        applySettings();
+        saveSettings();
+    });
 });
 
 // ===== Init =====
-initTheme();
+applySettings();
 loadBooks();

@@ -26,8 +26,8 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
             scriptSrc: ["'self'"],
             imgSrc: ["'self'", "data:"],
         }
@@ -70,9 +70,7 @@ app.use('/api', apiLimiter);
 app.use('/api', speedLimiter);
 
 // 6. 정적 파일 서빙
-app.use(express.static(path.join(__dirname, 'public'), {
-    maxAge: '1h', // 캐싱으로 서버 부하 감소
-}));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ===== 파라미터 검증 헬퍼 =====
 function validateInt(val, min, max) {
