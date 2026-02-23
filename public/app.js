@@ -821,7 +821,7 @@ async function loadHymnDetail(chapter, isPopState = false) {
     if (!img) {
         hymnDetailContent.innerHTML = `
             <div class="loader" id="hymn-loader">불러오는 중...</div>
-            <img class="hymn-sheet-img" style="display: none;" referrerpolicy="no-referrer" crossorigin="anonymous">
+            <img class="hymn-sheet-img" style="display: none;">
         `;
         img = hymnDetailContent.querySelector('.hymn-sheet-img');
         loader = hymnDetailContent.querySelector('#hymn-loader');
@@ -831,6 +831,10 @@ async function loadHymnDetail(chapter, isPopState = false) {
             loader = hymnDetailContent.querySelector('#hymn-loader');
         }
         img.style.display = 'none'; // 새 이미지 로드 전 숨김
+
+        // 이전 onerror 콜백 초기화
+        img.onerror = null;
+        img.onload = null;
     }
 
     try {
