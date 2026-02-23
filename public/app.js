@@ -484,6 +484,73 @@ booksView.addEventListener('touchend', (e) => {
     booksList.style.opacity = '1';
 }, { passive: true });
 
+// ===== Hymn Detail View Swipe Navigation =====
+let hymnTouchStartX = 0;
+let hymnTouchStartY = 0;
+let isHymnSwiping = false;
+
+hymnDetailView.addEventListener('touchstart', (e) => {
+    // 캐러셀(하단 바) 터치 시 스와이프 방지
+    if (e.target.closest('.chapter-carousel-wrap')) return;
+    hymnTouchStartX = e.touches[0].clientX;
+    hymnTouchStartY = e.touches[0].clientY;
+    isHymnSwiping = true;
+    hymnDetailContent.style.transition = 'none'; // 드래그 중 애니메이션 제거
+}, { passive: true });
+
+hymnDetailView.addEventListener('touchmove', (e) => {
+    if (!isHymnSwiping) return;
+    const dx = e.touches[0].clientX - hymnTouchStartX;
+    const dy = e.touches[0].clientY - hymnTouchStartY;
+
+    // 수평 이동거리 위주일 때만 좌우로 움직이기
+    if (Math.abs(dx) > Math.abs(dy)) {
+        // 첫 장에서 우측 스와이프나 마지막 장에서 좌측 스와이프 시 텐션(저항) 추가
+        if ((state.currentHymn === 1 && dx > 0) || (state.currentHymn === state.totalHymns && dx < 0)) {
+            hymnDetailContent.style.transform = `translateX(${dx * 0.3}px)`; // 덜 밀림
+        } else {
+            hymnDetailContent.style.transform = `translateX(${dx}px)`;
+            hymnDetailContent.style.opacity = `${1 - Math.abs(dx) / (window.innerWidth * 1.5)}`;
+        }
+    }
+}, { passive: true });
+
+hymnDetailView.addEventListener('touchend', (e) => {
+    if (!isHymnSwiping) return;
+    isHymnSwiping = false;
+
+    const dx = e.changedTouches[0].clientX - hymnTouchStartX;
+    const dy = e.changedTouches[0].clientY - hymnTouchStartY;
+
+    hymnDetailContent.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease';
+
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 60) {
+        if (dx < 0 && state.currentHymn < state.totalHymns) {
+            // 왼쪽 스와이프 -> 다음 찬송가
+            hymnDetailContent.style.transform = `translateX(${-window.innerWidth}px)`;
+            hymnDetailContent.style.opacity = '0';
+            setTimeout(() => {
+                state.currentHymn++;
+                loadHymnDetail(state.currentHymn);
+            }, 250);
+            return;
+        } else if (dx > 0 && state.currentHymn > 1) {
+            // 오른쪽 스와이프 -> 이전 찬송가
+            hymnDetailContent.style.transform = `translateX(${window.innerWidth}px)`;
+            hymnDetailContent.style.opacity = '0';
+            setTimeout(() => {
+                state.currentHymn--;
+                loadHymnDetail(state.currentHymn);
+            }, 250);
+            return;
+        }
+    }
+
+    // 제자리 복귀
+    hymnDetailContent.style.transform = 'translateX(0)';
+    hymnDetailContent.style.opacity = '1';
+}, { passive: true });
+
 // ===== Verse Selection =====
 function toggleVerse(verseNum) {
     if (state.selectedVerses.has(verseNum)) {
@@ -813,6 +880,11 @@ function updateHymnGrid(container, hymns) {
 
 async function loadHymnDetail(chapter, isPopState = false) {
     navigateTo('hymnDetail', isPopState);
+
+    // 전환 애니메이션 스타일 초기화
+    hymnDetailContent.style.transition = 'none';
+    hymnDetailContent.style.transform = 'translateX(0)';
+    hymnDetailContent.style.opacity = '1';
 
     // 로딩 UI 표시 (이전 악보는 지워집니다)
     hymnDetailContent.innerHTML = '<div class="loader" id="hymn-loader">불러오는 중...</div>';
