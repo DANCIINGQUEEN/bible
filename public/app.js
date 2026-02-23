@@ -366,7 +366,7 @@ function updateChapterNav() {
 prevChapterBtn.addEventListener('click', () => goToChapter('prev'));
 nextChapterBtn.addEventListener('click', () => goToChapter('next'));
 
-// ===== Swipe Navigation =====
+// ===== Verses View Swipe Navigation =====
 let touchStartX = 0;
 let touchStartY = 0;
 let touchOnCarousel = false;
@@ -384,6 +384,38 @@ versesView.addEventListener('touchend', (e) => {
 
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
         goToChapter(dx < 0 ? 'next' : 'prev');
+    }
+}, { passive: true });
+
+// ===== Main View Swipe Navigation =====
+let mainTouchStartX = 0;
+let mainTouchStartY = 0;
+const TESTAMENTS_ORDER = ['Old', 'New', 'Hymn'];
+
+booksView.addEventListener('touchstart', (e) => {
+    mainTouchStartX = e.touches[0].clientX;
+    mainTouchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+booksView.addEventListener('touchend', (e) => {
+    if (e.target.tagName === 'INPUT') return; // 검색 입력 중 스와이프 방지
+    const dx = e.changedTouches[0].clientX - mainTouchStartX;
+    const dy = e.changedTouches[0].clientY - mainTouchStartY;
+
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+        const currentIndex = TESTAMENTS_ORDER.indexOf(state.currentTestament);
+        let nextIndex = currentIndex;
+
+        if (dx < 0 && currentIndex < TESTAMENTS_ORDER.length - 1) {
+            nextIndex = currentIndex + 1; // Swipe left -> Next tab
+        } else if (dx > 0 && currentIndex > 0) {
+            nextIndex = currentIndex - 1; // Swipe right -> Prev tab
+        }
+
+        if (nextIndex !== currentIndex) {
+            const tabBtn = document.querySelector(`.tab-btn[data-testament="${TESTAMENTS_ORDER[nextIndex]}"]`);
+            if (tabBtn) tabBtn.click();
+        }
     }
 }, { passive: true });
 
