@@ -814,50 +814,43 @@ function updateHymnGrid(container, hymns) {
 async function loadHymnDetail(chapter, isPopState = false) {
     navigateTo('hymnDetail', isPopState);
 
-    // 이미 존재하는 이미지 태그 재활용 (Safari DOM 삭제 버그 방지)
-    let img = hymnDetailContent.querySelector('.hymn-sheet-img');
-    let loader = hymnDetailContent.querySelector('.loader');
-
-    if (!img) {
-        hymnDetailContent.innerHTML = `
-            <div class="loader" id="hymn-loader">불러오는 중...</div>
-            <img class="hymn-sheet-img" style="display: none;">
-        `;
-        img = hymnDetailContent.querySelector('.hymn-sheet-img');
-        loader = hymnDetailContent.querySelector('#hymn-loader');
-    } else {
-        if (!loader) {
-            hymnDetailContent.insertAdjacentHTML('afterbegin', '<div class="loader" id="hymn-loader">불러오는 중...</div>');
-            loader = hymnDetailContent.querySelector('#hymn-loader');
-        }
-        img.style.display = 'none'; // 새 이미지 로드 전 숨김
-
-        // 이전 onerror 콜백 초기화
-        img.onerror = null;
-        img.onload = null;
-    }
+    // 로딩 UI 표시 (이전 악보는 지워집니다)
+    hymnDetailContent.innerHTML = '<div class="loader" id="hymn-loader">불러오는 중...</div>';
 
     try {
         const hymn = await fetchJSON(`/api/hymns/${chapter}`);
 
-        img.onload = () => {
-            if (loader) loader.remove();
-            img.style.display = 'block';
-        };
+        // 화면 하단 캐러셀은 즉시 렌더링 (이미지 로딩 대기 중에도 다른 장으로 이동 가능하도록)
+        renderHymnCarousel();
+        window.scrollTo({ top: 0 });
 
-        img.onerror = () => {
-            // 사파리 특유의 끊김 엑박 버그 발생 시, 쿼리스트링을 붙여 서버 새로고침 1회 강제
-            if (!img.src.includes('?retry=')) {
-                img.src = `${hymn.downloadUrl}?retry=${Date.now()}`;
-            } else {
-                if (loader) loader.remove(); // 2번째도 실패하면 포기
+        // 브라우저 DOM 캐싱 버그를 피하기 위해 메모리 객체로 이미지 다운로드 (Preloading)
+        const newImg = new Image();
+        newImg.className = 'hymn-sheet-img';
+        newImg.alt = `찬송가 ${chapter}장 악보`;
+
+        newImg.onload = () => {
+            // 사용자가 그 사이 다른 찬송가로 넘기지 않았을 때만 화면에 부착 (Race condition 방지)
+            if (state.currentHymn === chapter) {
+                hymnDetailContent.innerHTML = '';
+                hymnDetailContent.appendChild(newImg);
             }
         };
 
-        img.alt = `찬송가 ${chapter}장 악보`;
-        img.src = hymn.downloadUrl; // 로딩 트리거
-        renderHymnCarousel();
-        window.scrollTo({ top: 0 });
+        newImg.onerror = () => {
+            if (state.currentHymn === chapter) {
+                if (!newImg.src.includes('?retry=')) {
+                    // 첫 실패 시 브라우저 강제 캐시 무시를 위해 쿼리 파라미터 추가
+                    newImg.src = `${hymn.downloadUrl}?retry=${Date.now()}`;
+                } else {
+                    hymnDetailContent.innerHTML = '<div class="loader" style="color:red;">이미지를 불러오지 못했습니다.</div>';
+                }
+            }
+        };
+
+        // 로딩 트리거 시작
+        newImg.src = hymn.downloadUrl;
+
     } catch (err) {
         hymnDetailContent.innerHTML = `<div class="loader">오류: ${err.message}</div>`;
     }
