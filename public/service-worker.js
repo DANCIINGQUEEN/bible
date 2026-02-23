@@ -1,5 +1,5 @@
 // 성경 앱 Service Worker
-const CACHE_NAME = 'bible-app-v11';
+const CACHE_NAME = 'bible-app-v12'; // 버전을 올려서 브라우저가 새 SW를 설치하도록 유도
 
 // 사전 캐시할 정적 리소스
 const PRECACHE_ASSETS = [
@@ -39,27 +39,28 @@ self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
+    // ⭐ 핵심 수정: 현재 도메인(origin)이 아닌 외부 요청(Firebase Storage 등)은 SW가 개입하지 않음
+    if (url.origin !== self.location.origin) {
+        return; // 아무것도 반환하지 않으면 브라우저가 알아서 네이티브하게 네트워크 요청을 처리합니다.
+    }
+
     // API 요청: Network First 전략
     if (url.pathname.startsWith('/api/')) {
         event.respondWith(
             fetch(request)
                 .then((response) => {
-                    // 성공한 응답은 캐시에 저장
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(request, responseClone);
                     });
                     return response;
                 })
-                .catch(() => {
-                    // 네트워크 실패 시 캐시에서 반환
-                    return caches.match(request);
-                })
+                .catch(() => caches.match(request))
         );
         return;
     }
 
-    // 정적 리소스: Cache First 전략
+    // 정적 리소스: Cache First 전략 (이제 내부 도메인 리소스만 여기를 탐)
     event.respondWith(
         caches.match(request)
             .then((cachedResponse) => {
@@ -67,7 +68,6 @@ self.addEventListener('fetch', (event) => {
                     return cachedResponse;
                 }
                 return fetch(request).then((response) => {
-                    // 유효한 응답만 캐시
                     if (response && response.status === 200 && response.type === 'basic') {
                         const responseClone = response.clone();
                         caches.open(CACHE_NAME).then((cache) => {
