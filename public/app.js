@@ -817,7 +817,7 @@ async function loadHymnDetail(chapter) {
     try {
         const hymn = await fetchJSON(`/api/hymns/${chapter}`);
         hymnDetailContent.innerHTML = `
-            <img src="${hymn.downloadUrl}" alt="찬송가 ${chapter}장 악보" class="hymn-sheet-img" loading="lazy">
+            <img src="${hymn.downloadUrl}" alt="찬송가 ${chapter}장 악보" class="hymn-sheet-img">
         `;
         renderHymnCarousel();
         window.scrollTo({ top: 0 });
