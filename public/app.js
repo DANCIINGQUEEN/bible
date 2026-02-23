@@ -54,17 +54,62 @@ async function fetchJSON(url) {
     return res.json();
 }
 
+// ===== History Navigation (Back/Forward) =====
+function pushHistoryState(view) {
+    // 현재 상태와 동일한 뷰로 이동하는 거라면 저장하지 않음
+    if (history.state && history.state.view === view) return;
+
+    const stateObj = {
+        view: view,
+        testament: state.currentTestament,
+        bookIndex: state.currentBook ? state.currentBook.bookIndex : null,
+        chapter: state.currentChapter,
+        hymn: state.currentHymn
+    };
+    history.pushState(stateObj, '', '');
+}
+
+window.addEventListener('popstate', (e) => {
+    // 설정 창이 열려있다면 설정 창만 닫고 종료
+    if (!settingsPanel.classList.contains('hidden')) {
+        closeSettings();
+        // 설정 창을 닫은 상태를 유지하기 위해 다시 현재 상태를 push (보정)
+        history.pushState(e.state, '', '');
+        return;
+    }
+
+    if (e.state && e.state.view) {
+        // 이전 상태 복원
+        state.currentTestament = e.state.testament || 'Old';
+        state.currentChapter = e.state.chapter || null;
+        state.currentHymn = e.state.hymn || null;
+
+        if (e.state.bookIndex && state.books.length > 0) {
+            state.currentBook = state.books.find(b => b.bookIndex === e.state.bookIndex);
+        }
+
+        navigateTo(e.state.view, true); // true 플래그로 history.pushState 방지
+    } else {
+        // 기본 상태 (브라우저 진입 초기)
+        navigateTo('books', true);
+    }
+});
+
 // ===== Views =====
 function showView(viewId) {
     [booksView, chaptersView, versesView, hymnsView, hymnDetailView].forEach(v => v.classList.remove('active'));
     $(viewId).classList.add('active');
 }
 
-function navigateTo(view) {
+function navigateTo(view, isPopState = false) {
     clearSelection();
     // 기본적으로 캐러셀 숨기기
     chapterCarouselWrap.classList.add('hidden');
     hymnCarouselWrap.classList.add('hidden');
+
+    if (!isPopState) {
+        pushHistoryState(view);
+    }
 
     if (view === 'books') {
         showView('#books-view');
@@ -72,47 +117,52 @@ function navigateTo(view) {
         backBtn.classList.add('hidden');
         state.currentBook = null;
         state.currentChapter = null;
+
+        // 올바른 탭 활성화 복원
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const activeTab = document.querySelector(`.tab-btn[data-testament="${state.currentTestament}"]`);
+        if (activeTab) activeTab.classList.add('active');
+
+        if (state.currentTestament === 'Hymn') {
+            booksList.classList.add('hymn-mode');
+            if (state.hymns.length === 0) loadHymnsData();
+            else renderHymnsInBooksList();
+        } else {
+            booksList.classList.remove('hymn-mode');
+            if (state.books.length > 0) renderBooks();
+        }
     } else if (view === 'chapters') {
         showView('#chapters-view');
-        headerTitle.textContent = state.currentBook.bookName;
+        headerTitle.textContent = state.currentBook ? state.currentBook.bookName : '장 선택';
         backBtn.classList.remove('hidden');
+        if (state.currentBook) loadChapters(state.currentBook.bookIndex, true); // true 플래그로 중복 탐색 방지
     } else if (view === 'verses') {
         showView('#verses-view');
-        headerTitle.textContent = `${state.currentBook.bookName} ${state.currentChapter}장`;
+        headerTitle.textContent = `${state.currentBook ? state.currentBook.bookName : ''} ${state.currentChapter || ''}장`;
         backBtn.classList.remove('hidden');
         chapterCarouselWrap.classList.remove('hidden');
         chapterCarouselWrap.classList.remove('carousel-hidden');
         carouselHidden = false;
         lastScrollY = 0;
-    } else if (view === 'hymns') {
-        showView('#hymns-view');
-        headerTitle.textContent = '찬송가';
-        backBtn.classList.remove('hidden');
+        if (state.currentBook && state.currentChapter) {
+            loadVerses(state.currentBook.bookIndex, state.currentChapter, null, true);
+        }
     } else if (view === 'hymnDetail') {
         showView('#hymn-detail-view');
-        headerTitle.textContent = `찬송가 ${state.currentHymn}장`;
+        headerTitle.textContent = `찬송가 ${state.currentHymn || ''}장`;
         backBtn.classList.remove('hidden');
         hymnCarouselWrap.classList.remove('hidden');
         hymnCarouselWrap.classList.remove('carousel-hidden');
         carouselHidden = false;
         lastScrollY = 0;
+        if (state.currentHymn) loadHymnDetail(state.currentHymn, true);
     }
 }
 
-// ===== Back Navigation =====
+// ===== Back Navigation (UI Button) =====
 backBtn.addEventListener('click', () => {
-    if (versesView.classList.contains('active')) {
-        navigateTo('chapters');
-    } else if (chaptersView.classList.contains('active')) {
-        navigateTo('books');
-    } else if (hymnDetailView.classList.contains('active')) {
-        navigateTo('books');
-        // 찬송가 탭을 다시 활성화
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector('.tab-btn[data-testament="Hymn"]').classList.add('active');
-        state.currentTestament = 'Hymn';
-        renderHymnsInBooksList();
-    }
+    // UI의 뒤로가기 버튼을 누르면 브라우저 히스토리 백을 트리거 (일관성 유지)
+    history.back();
 });
 
 // ===== Load Books =====
@@ -162,8 +212,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ===== Load Chapters =====
-async function loadChapters(bookIndex) {
-    navigateTo('chapters');
+async function loadChapters(bookIndex, isPopState = false) {
+    navigateTo('chapters', isPopState);
     chaptersGrid.innerHTML = '<div class="loader">불러오는 중...</div>';
     try {
         const chapters = await fetchJSON(`/api/books/${bookIndex}/chapters`);
@@ -188,8 +238,8 @@ async function loadChapters(bookIndex) {
 // ===== Load Verses =====
 const versesCache = {};
 
-async function loadVerses(bookIndex, chapter, direction) {
-    navigateTo('verses');
+async function loadVerses(bookIndex, chapter, direction, isPopState = false) {
+    navigateTo('verses', isPopState);
 
     // 애니메이션 방향 결정
     if (direction) {
@@ -390,33 +440,84 @@ versesView.addEventListener('touchend', (e) => {
 // ===== Main View Swipe Navigation =====
 let mainTouchStartX = 0;
 let mainTouchStartY = 0;
+let isMainSwiping = false;
 const TESTAMENTS_ORDER = ['Old', 'New', 'Hymn'];
 
 booksView.addEventListener('touchstart', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.closest('.tab-btn')) return;
     mainTouchStartX = e.touches[0].clientX;
     mainTouchStartY = e.touches[0].clientY;
+    isMainSwiping = true;
+    booksList.style.transition = 'none'; // 드래그 중 애니메이션 제거
+}, { passive: true });
+
+booksView.addEventListener('touchmove', (e) => {
+    if (!isMainSwiping) return;
+    const dx = e.touches[0].clientX - mainTouchStartX;
+    const dy = e.touches[0].clientY - mainTouchStartY;
+
+    // 수평 이동거리 위주일 때만 책 목록 좌우로 움직이기
+    if (Math.abs(dx) > Math.abs(dy)) {
+        booksList.style.transform = `translateX(${dx}px)`;
+        // 이동할수록 살짝 투명해지는 효과
+        booksList.style.opacity = `${1 - Math.abs(dx) / (window.innerWidth * 1.5)}`;
+    }
 }, { passive: true });
 
 booksView.addEventListener('touchend', (e) => {
-    if (e.target.tagName === 'INPUT') return; // 검색 입력 중 스와이프 방지
+    if (!isMainSwiping) return;
+    isMainSwiping = false;
+
     const dx = e.changedTouches[0].clientX - mainTouchStartX;
     const dy = e.changedTouches[0].clientY - mainTouchStartY;
 
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+    // 애니메이션 복구
+    booksList.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease';
+
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 60) {
         const currentIndex = TESTAMENTS_ORDER.indexOf(state.currentTestament);
         let nextIndex = currentIndex;
+        let direction = '';
 
         if (dx < 0 && currentIndex < TESTAMENTS_ORDER.length - 1) {
-            nextIndex = currentIndex + 1; // Swipe left -> Next tab
+            nextIndex = currentIndex + 1; // 왼쪽으로 스와이프 -> 다음 탭
+            direction = 'next';
         } else if (dx > 0 && currentIndex > 0) {
-            nextIndex = currentIndex - 1; // Swipe right -> Prev tab
+            nextIndex = currentIndex - 1; // 오른쪽으로 스와이프 -> 이전 탭
+            direction = 'prev';
         }
 
         if (nextIndex !== currentIndex) {
             const tabBtn = document.querySelector(`.tab-btn[data-testament="${TESTAMENTS_ORDER[nextIndex]}"]`);
-            if (tabBtn) tabBtn.click();
+            if (tabBtn) {
+                // 완전히 화면 밖으로 날려보내기
+                const screenWidth = window.innerWidth;
+                booksList.style.transform = `translateX(${direction === 'next' ? -screenWidth : screenWidth}px)`;
+                booksList.style.opacity = '0';
+
+                setTimeout(() => {
+                    tabBtn.click(); // 실제 탭 클릭해서 컨텐츠 렌더링
+
+                    // 반대쪽 끝으로 위치 초기화 (트랜지션 없이)
+                    booksList.style.transition = 'none';
+                    booksList.style.transform = `translateX(${direction === 'next' ? screenWidth : -screenWidth}px)`;
+
+                    // 리플로우(Reflow) 강제 발생 - 그래야 위치 초기화가 즉시 적용됨
+                    void booksList.offsetWidth;
+
+                    // 제자리로 돌아오는 애니메이션 적용
+                    booksList.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease';
+                    booksList.style.transform = 'translateX(0)';
+                    booksList.style.opacity = '1';
+                }, 250);
+                return;
+            }
         }
     }
+
+    // 스와이프 거리가 짧거나 더 이상 넘어갈 탭이 없는 경우 제자리 탄력 복귀
+    booksList.style.transform = 'translateX(0)';
+    booksList.style.opacity = '1';
 }, { passive: true });
 
 // ===== Verse Selection =====
@@ -746,8 +847,8 @@ function updateHymnGrid(container, hymns) {
     });
 }
 
-async function loadHymnDetail(chapter) {
-    navigateTo('hymnDetail');
+async function loadHymnDetail(chapter, isPopState = false) {
+    navigateTo('hymnDetail', isPopState);
     hymnDetailContent.innerHTML = '<div class="loader">불러오는 중...</div>';
     try {
         const hymn = await fetchJSON(`/api/hymns/${chapter}`);

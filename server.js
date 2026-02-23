@@ -37,7 +37,7 @@ app.use(helmet({
         directives: {
             defaultSrc: ["'self'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net", "data:"],
             scriptSrc: ["'self'"],
             imgSrc: ["'self'", "data:", "https://storage.googleapis.com", "https://firebasestorage.googleapis.com", "https://*.firebasestorage.app"],
             manifestSrc: ["'self'"],

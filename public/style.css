@@ -989,22 +989,34 @@ body {
 /* ===== Loading ===== */
 .loader {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 80px 20px;
+  gap: 20px;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  animation: fadeIn 0.4s ease;
 }
 
 .loader::before {
   content: '';
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  margin-right: 12px;
-  animation: spin 0.8s linear infinite;
+  border: 3px solid rgba(255, 255, 255, 0.05);
+  border-top-color: var(--accent);
+  border-right-color: var(--accent-secondary);
+  animation: spin 1s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+[data-theme="light"] .loader::before {
+  border-color: rgba(0, 0, 0, 0.05);
+  border-top-color: var(--accent);
+  border-right-color: var(--accent-secondary);
 }
 
 @keyframes spin {
