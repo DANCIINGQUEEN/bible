@@ -811,14 +811,47 @@ function updateHymnGrid(container, hymns) {
     });
 }
 
-async function loadHymnDetail(chapter) {
-    navigateTo('hymnDetail');
-    hymnDetailContent.innerHTML = '<div class="loader">불러오는 중...</div>';
+async function loadHymnDetail(chapter, isPopState = false) {
+    navigateTo('hymnDetail', isPopState);
+
+    // 이미 존재하는 이미지 태그 재활용 (Safari DOM 삭제 버그 방지)
+    let img = hymnDetailContent.querySelector('.hymn-sheet-img');
+    let loader = hymnDetailContent.querySelector('.loader');
+
+    if (!img) {
+        hymnDetailContent.innerHTML = `
+            <div class="loader" id="hymn-loader">불러오는 중...</div>
+            <img class="hymn-sheet-img" style="display: none;" referrerpolicy="no-referrer" crossorigin="anonymous">
+        `;
+        img = hymnDetailContent.querySelector('.hymn-sheet-img');
+        loader = hymnDetailContent.querySelector('#hymn-loader');
+    } else {
+        if (!loader) {
+            hymnDetailContent.insertAdjacentHTML('afterbegin', '<div class="loader" id="hymn-loader">불러오는 중...</div>');
+            loader = hymnDetailContent.querySelector('#hymn-loader');
+        }
+        img.style.display = 'none'; // 새 이미지 로드 전 숨김
+    }
+
     try {
         const hymn = await fetchJSON(`/api/hymns/${chapter}`);
-        hymnDetailContent.innerHTML = `
-            <img src="${hymn.downloadUrl}" alt="찬송가 ${chapter}장 악보" class="hymn-sheet-img">
-        `;
+
+        img.onload = () => {
+            if (loader) loader.remove();
+            img.style.display = 'block';
+        };
+
+        img.onerror = () => {
+            // 사파리 특유의 끊김 엑박 버그 발생 시, 쿼리스트링을 붙여 서버 새로고침 1회 강제
+            if (!img.src.includes('?retry=')) {
+                img.src = `${hymn.downloadUrl}?retry=${Date.now()}`;
+            } else {
+                if (loader) loader.remove(); // 2번째도 실패하면 포기
+            }
+        };
+
+        img.alt = `찬송가 ${chapter}장 악보`;
+        img.src = hymn.downloadUrl; // 로딩 트리거
         renderHymnCarousel();
         window.scrollTo({ top: 0 });
     } catch (err) {
