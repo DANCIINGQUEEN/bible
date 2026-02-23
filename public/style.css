@@ -420,6 +420,7 @@ body {
   display: none;
   padding: 16px;
   animation: fadeIn 0.3s ease;
+  overflow-x: hidden;
 }
 
 .view.active {
@@ -478,6 +479,10 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+}
+
+.books-grid.hymn-mode {
+  grid-template-columns: repeat(5, 1fr);
 }
 
 .book-btn {
@@ -540,10 +545,182 @@ body {
   transform: translateY(0);
 }
 
+/* ===== Chapter Carousel ===== */
+.chapter-carousel-wrap {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  z-index: 90;
+  background: var(--bg-primary);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  -webkit-mask-image: linear-gradient(to right,
+      transparent 0%,
+      black 12%,
+      black 88%,
+      transparent 100%);
+  mask-image: linear-gradient(to right,
+      transparent 0%,
+      black 12%,
+      black 88%,
+      transparent 100%);
+}
+
+.chapter-carousel-wrap.carousel-hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-theme="light"] .chapter-carousel-wrap {
+  background: var(--bg-primary);
+}
+
+.chapter-carousel {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 0 20px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+
+.chapter-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.chapter-carousel-btn {
+  flex-shrink: 0;
+  width: 52px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+  scroll-snap-align: center;
+}
+
+.chapter-carousel-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.chapter-carousel-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 700;
+  box-shadow: 0 2px 10px var(--accent-glow);
+}
+
+/* ===== Hymn Button (in books-grid) ===== */
+.hymn-btn {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: all var(--transition);
+}
+
+.hymn-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.hymn-btn:active {
+  transform: translateY(0);
+}
+
+/* ===== Hymn Search ===== */
+.hymn-search-wrap {
+  grid-column: 1 / -1;
+  margin-bottom: 8px;
+}
+
+.hymn-search {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 1rem;
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color var(--transition);
+  box-sizing: border-box;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.hymn-search::-webkit-outer-spin-button,
+.hymn-search::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.hymn-search:focus {
+  border-color: var(--accent);
+}
+
+.hymn-search::placeholder {
+  color: var(--text-secondary);
+}
+
+.hymn-grid-inner {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .hymn-grid-inner {
+    grid-template-columns: repeat(10, 1fr);
+    gap: 10px;
+  }
+}
+
+/* ===== Hymn Detail ===== */
+.hymn-detail-content {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-top: 44px;
+  padding-bottom: 40px;
+  text-align: center;
+}
+
+.hymn-sheet-img {
+  width: 100%;
+  max-width: 600px;
+}
+
 /* ===== Verses ===== */
 .verses-content {
   max-width: 720px;
   margin: 0 auto;
+  padding-top: 44px;
   padding-bottom: 80px;
 }
 
@@ -844,6 +1021,11 @@ body {
   }
 
   .chapters-grid {
+    grid-template-columns: repeat(10, 1fr);
+    gap: 10px;
+  }
+
+  .books-grid.hymn-mode {
     grid-template-columns: repeat(10, 1fr);
     gap: 10px;
   }

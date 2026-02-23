@@ -1,5 +1,5 @@
 // 성경 앱 Service Worker
-const CACHE_NAME = 'bible-app-v1';
+const CACHE_NAME = 'bible-app-v11';
 
 // 사전 캐시할 정적 리소스
 const PRECACHE_ASSETS = [

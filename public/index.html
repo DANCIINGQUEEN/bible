@@ -105,6 +105,7 @@
         <div class="testament-tabs">
           <button class="tab-btn active" data-testament="Old">구약</button>
           <button class="tab-btn" data-testament="New">신약</button>
+          <button class="tab-btn" data-testament="Hymn">찬송가</button>
         </div>
         <div id="books-list" class="books-grid"></div>
       </section>
@@ -114,8 +115,24 @@
         <div id="chapters-grid" class="chapters-grid"></div>
       </section>
 
+      <!-- 찬송가 목록 뷰 -->
+      <section id="hymns-view" class="view">
+        <div id="hymns-grid" class="hymns-grid"></div>
+      </section>
+
+      <!-- 찬송가 악보 뷰 -->
+      <section id="hymn-detail-view" class="view">
+        <div id="hymn-carousel-wrap" class="chapter-carousel-wrap hidden">
+          <div id="hymn-carousel" class="chapter-carousel"></div>
+        </div>
+        <div id="hymn-detail-content" class="hymn-detail-content"></div>
+      </section>
+
       <!-- 구절 뷰 -->
       <section id="verses-view" class="view">
+        <div id="chapter-carousel-wrap" class="chapter-carousel-wrap">
+          <div id="chapter-carousel" class="chapter-carousel"></div>
+        </div>
         <div id="verses-content" class="verses-content"></div>
         <div id="chapter-nav" class="chapter-nav">
           <button id="prev-chapter" class="chapter-nav-btn" aria-label="이전 장">

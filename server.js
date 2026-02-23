@@ -11,12 +11,18 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 let db;
+let hymnDb;
 
 async function connectDB() {
     const client = new MongoClient(process.env.MONGODB_URI);
     await client.connect();
     db = client.db('bible_db');
-    console.log('MongoDB 연결 성공');
+    console.log('Bible DB 연결 성공');
+
+    const hymnClient = new MongoClient(process.env.MONGODB_URI_HYMN);
+    await hymnClient.connect();
+    hymnDb = hymnClient.db('Hymn');
+    console.log('Hymn DB 연결 성공');
 }
 
 // ===== 보안 미들웨어 =====
@@ -29,7 +35,7 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
             scriptSrc: ["'self'"],
-            imgSrc: ["'self'", "data:"],
+            imgSrc: ["'self'", "data:", "https://storage.googleapis.com"],
             manifestSrc: ["'self'"],
             workerSrc: ["'self'"],
         }
@@ -138,6 +144,38 @@ app.get('/api/books/:bookIndex/chapters/:chapter', async (req, res) => {
             .sort({ verse: 1 })
             .toArray();
         res.json(verses);
+    } catch (err) {
+        res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+    }
+});
+
+// ===== 찬송가 API =====
+
+// 찬송가 목록 (장 번호만)
+app.get('/api/hymns', async (req, res) => {
+    try {
+        const hymns = await hymnDb.collection('hymns')
+            .find({}, { projection: { _id: 0, chapter: 1 } })
+            .sort({ chapter: 1 })
+            .toArray();
+        res.json(hymns);
+    } catch (err) {
+        res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+    }
+});
+
+// 특정 찬송가 조회
+app.get('/api/hymns/:chapter', async (req, res) => {
+    try {
+        const chapter = validateInt(req.params.chapter, 1, 645);
+        if (!chapter) return res.status(400).json({ error: '잘못된 요청입니다.' });
+
+        const hymn = await hymnDb.collection('hymns').findOne(
+            { chapter },
+            { projection: { _id: 0 } }
+        );
+        if (!hymn) return res.status(404).json({ error: '찬송가를 찾을 수 없습니다.' });
+        res.json(hymn);
     } catch (err) {
         res.status(500).json({ error: '서버 오류가 발생했습니다.' });
     }
