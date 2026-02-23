@@ -8,6 +8,10 @@ const rateLimit = require('express-rate-limit');
 const slowDown = require('express-slow-down');
 
 const app = express();
+
+// Vercel과 같은 리버스 프록시 환경에서 클라이언트 IP를 올바로 가져오기 위한 설정
+app.set('trust proxy', 1);
+
 const PORT = process.env.PORT || 3000;
 
 let db;
