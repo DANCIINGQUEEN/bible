@@ -30,6 +30,8 @@ app.use(helmet({
             fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
             scriptSrc: ["'self'"],
             imgSrc: ["'self'", "data:"],
+            manifestSrc: ["'self'"],
+            workerSrc: ["'self'"],
         }
     },
     crossOriginEmbedderPolicy: false,
