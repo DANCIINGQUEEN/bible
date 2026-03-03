@@ -46,3 +46,15 @@ public/
 ```bash
 npm run dev   # node server.js (포트 3000)
 ```
+
+## 주의사항
+- 정적 파일(JS/CSS/HTML) 수정 시 `service-worker.js`의 `CACHE_NAME` 버전을 반드시 올려야 브라우저에 반영됨 (현재 v14)
+- 페이지 간 이동 시 `window.location.href`는 히스토리 엔트리를 추가하므로, 뒤로가기 용도에는 `history.back()` 사용
+- 장(chapter) 이동은 `history.replaceState`로 URL만 변경 (히스토리 추가 안 함)
+- 스와이프 제스처 구현 시 `overflow-x: hidden`이 html, body, #app 모두에 필요 (모바일 브라우저에서 fixed 요소 밀림 방지)
+
+## 개발 이력 (2026-03-03)
+- `.claudeignore`, `CLAUDE.md` 생성
+- 스와이프 시 설정아이콘(⚙️) 밀리는 버그 수정 (`style.css` overflow 처리)
+- 뒤로가기 히스토리 버그 수정 (`verses.js` → `history.back()`)
+- Service Worker 캐시 버전 v13 → v14
