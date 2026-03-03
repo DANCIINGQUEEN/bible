@@ -1,0 +1,17 @@
+# 의존성 패키지 (매우 큰 디렉토리, 읽을 필요 없음)
+node_modules/
+
+# 환경 변수 (민감한 정보 포함)
+.env
+
+# Git 내부 파일
+.git/
+
+# 패키지 락 파일 (자동 생성, 매우 큼)
+package-lock.json
+
+# 아이콘 이미지 파일
+public/icons/
+
+# 바이너리 이미지 파일
+icon.png

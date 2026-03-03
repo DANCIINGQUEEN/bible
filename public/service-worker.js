@@ -1,12 +1,21 @@
 // 성경 앱 Service Worker
-const CACHE_NAME = 'bible-app-v12'; // 버전을 올려서 브라우저가 새 SW를 설치하도록 유도
+const CACHE_NAME = 'bible-app-v13'; // 멀티페이지 아키텍처 전환
 
 // 사전 캐시할 정적 리소스
 const PRECACHE_ASSETS = [
     '/',
     '/index.html',
+    '/chapters.html',
+    '/verses.html',
+    '/hymns.html',
+    '/hymn.html',
     '/style.css',
-    '/app.js',
+    '/common.js',
+    '/books.js',
+    '/chapters.js',
+    '/verses.js',
+    '/hymns.js',
+    '/hymn.js',
     '/manifest.json',
     '/icons/icon-192.png',
     '/icons/icon-512.png',

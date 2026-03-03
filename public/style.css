@@ -55,6 +55,8 @@
 html {
   font-size: 16px;
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 body {
@@ -63,6 +65,12 @@ body {
   color: var(--text-primary);
   min-height: 100dvh;
   overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+#app {
+  overflow-x: hidden;
+  position: relative;
 }
 
 /* ===== Scrollbar ===== */

@@ -4,8 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="개역개정 한글 성경을 온라인으로 읽고 공유할 수 있는 웹앱입니다.">
-  <title>개역개정 성경</title>
+  <title>찬송가 | 개역개정 성경</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1a1a2e">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,7 +16,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
   <script>
-    // 테마/하단정렬 즉시 적용 (FOUC 방지)
     document.documentElement.setAttribute('data-theme', localStorage.getItem('bible-theme') || 'dark');
     document.documentElement.setAttribute('data-bottom-align', localStorage.getItem('bible-bottomAlign') === 'true');
   </script>
@@ -26,8 +24,12 @@
 <body>
   <div id="app">
     <header id="header">
-      <div style="width:40px;flex-shrink:0;"></div>
-      <h1 id="header-title">개역개정 성경</h1>
+      <button id="back-btn" class="header-btn" aria-label="뒤로가기">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </button>
+      <h1 id="header-title">찬송가</h1>
       <button id="settings-btn" class="header-btn" aria-label="설정">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3" />
@@ -37,19 +39,18 @@
     </header>
 
     <main id="main" style="padding: 16px;">
-      <div class="testament-tabs">
-        <button class="tab-btn" data-testament="Old">구약</button>
-        <button class="tab-btn" data-testament="New">신약</button>
-        <button class="tab-btn" data-testament="Hymn">찬송가</button>
+      <div class="hymn-search-wrap">
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="hymn-search"
+          class="hymn-search" placeholder="장 번호 검색 (1~645)">
       </div>
-      <div id="books-list" class="books-grid"></div>
+      <div id="hymn-grid" class="hymn-grid-inner"></div>
     </main>
 
     <div id="toast" class="toast hidden"></div>
   </div>
 
   <script src="/common.js"></script>
-  <script src="/books.js"></script>
+  <script src="/hymns.js"></script>
 </body>
 
 </html>
