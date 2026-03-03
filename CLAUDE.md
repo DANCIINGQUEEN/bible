@@ -40,6 +40,7 @@ public/
 - 보안 미들웨어: Helmet, CORS, Rate Limit, Slow Down 적용 중
 - `.env`에 `MONGODB_URI`, `MONGODB_URI_HYMN`, `ALLOWED_ORIGINS` 존재
 - 찬송가 악보 이미지는 Firebase Storage에 저장
+- PowerShell에서는 && 대신 ;을 사용해야 함
 
 ## 실행 방법
 ```bash

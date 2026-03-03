@@ -28,7 +28,7 @@ const versesCache = {};
 
 // ===== 뒤로가기 =====
 document.getElementById('back-btn').addEventListener('click', () => {
-    window.location.href = `/chapters.html?book=${bookIndex}`;
+    history.back();
 });
 
 // ===== 초기화 =====

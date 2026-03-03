@@ -1,5 +1,5 @@
 // 성경 앱 Service Worker
-const CACHE_NAME = 'bible-app-v13'; // 멀티페이지 아키텍처 전환
+const CACHE_NAME = 'bible-app-v14'; // history.back() 버그 수정 + 스와이프 고정
 
 // 사전 캐시할 정적 리소스
 const PRECACHE_ASSETS = [
