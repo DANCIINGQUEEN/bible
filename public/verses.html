@@ -38,7 +38,7 @@
       </button>
     </header>
 
-    <main id="main" style="padding: 0 16px;">
+    <main id="main" style="padding: 0;">
       <div id="chapter-carousel-wrap" class="chapter-carousel-wrap">
         <div id="chapter-carousel" class="chapter-carousel"></div>
       </div>
@@ -70,6 +70,19 @@
         <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
       </svg>
     </button>
+
+    <!-- 형광펜 색상 선택 팝업 -->
+    <div id="hl-popup" class="hl-popup" role="dialog" aria-label="형광펜 색상">
+      <p class="hl-popup-label">형광펜 색상</p>
+      <div class="hl-popup-colors">
+        <button class="hl-color-btn" data-color="yellow" aria-label="노랑"></button>
+        <button class="hl-color-btn" data-color="green"  aria-label="초록"></button>
+        <button class="hl-color-btn" data-color="pink"   aria-label="분홍"></button>
+        <button class="hl-color-btn" data-color="blue"   aria-label="파랑"></button>
+        <button class="hl-color-btn" data-color="purple" aria-label="보라"></button>
+        <button class="hl-color-btn hl-erase-btn" data-color="erase" aria-label="지우기">✕</button>
+      </div>
+    </div>
 
     <div id="toast" class="toast hidden"></div>
   </div>

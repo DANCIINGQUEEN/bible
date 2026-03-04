@@ -19,12 +19,109 @@ const prevLabel = document.getElementById('prev-label');
 const nextLabel = document.getElementById('next-label');
 const chapterIndicator = document.getElementById('chapter-indicator');
 const shareFab = document.getElementById('share-fab');
+const hlPopupEl = document.getElementById('hl-popup');
 
 let bookName = '';
 let totalChapters = 0;
 let verses = [];
-let selectedVerses = new Set();
+let selectedVerses = new Set(); // 공유용 임시 선택
 const versesCache = {};
+
+// ===== 형광펜 (localStorage 영구 저장) =====
+const HIGHLIGHTS_KEY = 'bible-highlights';
+const HL_COLORS = ['yellow', 'green', 'pink', 'blue', 'purple'];
+let activeColor = 'blue'; // 마지막으로 사용한 색상
+let hlPopupVerse = null;  // 팝업 대상 구절 번호
+
+// 롱프레스 상태
+let longPressTimer = null;
+let longPressStartX = 0;
+let longPressStartY = 0;
+let longPressJustFired = false;
+
+// --- localStorage CRUD ---
+
+// 현재 장의 하이라이트 Map<verseNum, colorName> 반환 (O(1) 조회)
+function getChapterHighlights() {
+    try {
+        const data = JSON.parse(localStorage.getItem(HIGHLIGHTS_KEY)) || {};
+        const chapterData = data[`${bookIndex}-${currentChapter}`] || {};
+        return new Map(Object.entries(chapterData).map(([k, v]) => [parseInt(k), v]));
+    } catch {
+        return new Map();
+    }
+}
+
+function saveHighlight(verseNum, color) {
+    try {
+        const data = JSON.parse(localStorage.getItem(HIGHLIGHTS_KEY)) || {};
+        const key = `${bookIndex}-${currentChapter}`;
+        if (!data[key]) data[key] = {};
+        data[key][verseNum] = color;
+        localStorage.setItem(HIGHLIGHTS_KEY, JSON.stringify(data));
+    } catch { /* 스토리지 오류 무시 */ }
+}
+
+function removeHighlight(verseNum) {
+    try {
+        const data = JSON.parse(localStorage.getItem(HIGHLIGHTS_KEY)) || {};
+        const key = `${bookIndex}-${currentChapter}`;
+        if (data[key]) {
+            delete data[key][verseNum];
+            if (Object.keys(data[key]).length === 0) delete data[key];
+        }
+        localStorage.setItem(HIGHLIGHTS_KEY, JSON.stringify(data));
+    } catch { /* 스토리지 오류 무시 */ }
+}
+
+// DOM 아이템의 현재 하이라이트 색상 반환 (없으면 null)
+function getItemHlColor(item) {
+    return HL_COLORS.find(c => item.classList.contains(`hl-${c}`)) || null;
+}
+
+// --- 색상 팝업 ---
+
+function showColorPicker(verseNum) {
+    hlPopupVerse = verseNum;
+    const item = versesContent.querySelector(`[data-verse="${verseNum}"]`);
+    const currentColor = item ? getItemHlColor(item) : null;
+    hlPopupEl.querySelectorAll('.hl-color-btn').forEach(btn => {
+        btn.classList.toggle('hl-btn-active', btn.dataset.color === (currentColor || activeColor));
+    });
+    hlPopupEl.classList.add('active');
+}
+
+function hideColorPicker() {
+    hlPopupEl.classList.remove('active');
+    hlPopupVerse = null;
+}
+
+// 팝업 색상 버튼 이벤트
+hlPopupEl.querySelectorAll('.hl-color-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (hlPopupVerse === null) return;
+
+        const color = btn.dataset.color;
+        const item = versesContent.querySelector(`[data-verse="${hlPopupVerse}"]`);
+        if (!item) { hideColorPicker(); return; }
+
+        // 기존 하이라이트 클래스 제거
+        HL_COLORS.forEach(c => item.classList.remove(`hl-${c}`));
+
+        if (color === 'erase') {
+            removeHighlight(hlPopupVerse);
+            selectedVerses.delete(hlPopupVerse);
+        } else {
+            item.classList.add(`hl-${color}`);
+            saveHighlight(hlPopupVerse, color);
+            activeColor = color;
+            selectedVerses.add(hlPopupVerse);
+        }
+        updateSelection();
+        hideColorPicker();
+    });
+});
 
 // ===== 뒤로가기 =====
 document.getElementById('back-btn').addEventListener('click', () => {
@@ -47,7 +144,6 @@ async function init() {
         bookName = book.bookName;
         totalChapters = chapters.length;
 
-        // chapter 범위 검증
         if (currentChapter > totalChapters) currentChapter = totalChapters;
 
         await loadVerses(currentChapter, null);
@@ -58,11 +154,15 @@ async function init() {
 
 // ===== 구절 로드 =====
 async function loadVerses(chapter, direction) {
-    // URL + 헤더 업데이트
     currentChapter = chapter;
     headerTitle.textContent = `${bookName} ${chapter}장`;
     document.title = `${bookName} ${chapter}장 | 개역개정 성경`;
     history.replaceState(null, '', `/verses.html?book=${bookIndex}&chapter=${chapter}`);
+
+    // 캐러셀 즉시 업데이트 — 슬라이드 시작과 동기화
+    if (direction && chapterCarousel.children.length === totalChapters) {
+        updateCarouselActive();
+    }
 
     // 슬라이드 애니메이션
     if (direction) {
@@ -95,7 +195,6 @@ async function loadVerses(chapter, direction) {
     updateChapterNav();
     window.scrollTo({ top: 0 });
 
-    // 인접 장 프리페치
     prefetchChapter(chapter - 1);
     prefetchChapter(chapter + 1);
 }
@@ -111,6 +210,7 @@ async function prefetchChapter(chapter) {
 
 // ===== 구절 렌더링 =====
 function renderVerses() {
+    const hlMap = getChapterHighlights(); // 페이지당 1회 읽기, O(1) 조회
     let html = '';
     let lastHeadline = null;
     verses.forEach(v => {
@@ -118,18 +218,37 @@ function renderVerses() {
             html += `<div class="verse-headline">${v.headline}</div>`;
             lastHeadline = v.headline;
         }
+        const hlColor = hlMap.get(v.verse);
+        const hlClass = hlColor ? ` hl-${hlColor}` : '';
         html += `
-            <div class="verse-item" data-verse="${v.verse}">
+            <div class="verse-item${hlClass}" data-verse="${v.verse}">
                 <span class="verse-num">${v.verse}</span>
                 <span class="verse-text">${v.content}</span>
             </div>
         `;
     });
     versesContent.innerHTML = html;
+
     versesContent.querySelectorAll('.verse-item').forEach(item => {
+        const verseNum = parseInt(item.dataset.verse);
+
+        // 탭: 현재 색상으로 형광펜 토글 + 공유 선택
         item.addEventListener('click', e => {
             e.stopPropagation();
-            toggleVerse(parseInt(item.dataset.verse));
+            if (longPressJustFired) { longPressJustFired = false; return; }
+            toggleVerse(verseNum);
+        });
+
+        // 롱프레스: 색상 선택 팝업
+        item.addEventListener('pointerdown', e => {
+            longPressStartX = e.clientX;
+            longPressStartY = e.clientY;
+            longPressTimer = setTimeout(() => {
+                longPressTimer = null;
+                longPressJustFired = true;
+                if (navigator.vibrate) navigator.vibrate(30);
+                showColorPicker(verseNum);
+            }, 600);
         });
     });
 }
@@ -175,7 +294,7 @@ function renderChapterCarousel() {
         });
         chapterCarousel.appendChild(btn);
     }
-    scrollCarouselToCenter(currentChapter);
+    scrollCarouselToCenter(currentChapter, false);
 }
 
 function updateCarouselActive() {
@@ -185,16 +304,16 @@ function updateCarouselActive() {
     scrollCarouselToCenter(currentChapter);
 }
 
-function scrollCarouselToCenter(chapter) {
-    requestAnimationFrame(() => {
+function scrollCarouselToCenter(chapter, smooth = true) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
         const activeBtn = chapterCarousel.querySelector('.chapter-carousel-btn.active') ||
             chapterCarousel.children[chapter - 1];
         if (!activeBtn) return;
         chapterCarousel.scrollTo({
             left: activeBtn.offsetLeft - chapterCarousel.offsetWidth / 2 + activeBtn.offsetWidth / 2,
-            behavior: 'smooth',
+            behavior: smooth ? 'smooth' : 'instant',
         });
-    });
+    }));
 }
 
 // ===== 스크롤 시 캐러셀 숨기기 =====
@@ -233,12 +352,21 @@ document.getElementById('main').addEventListener('touchend', (e) => {
     }
 }, { passive: true });
 
-// ===== 구절 선택 =====
+// ===== 구절 선택/하이라이트 토글 =====
 function toggleVerse(verseNum) {
-    if (selectedVerses.has(verseNum)) {
+    const item = versesContent.querySelector(`[data-verse="${verseNum}"]`);
+    const currentColor = item ? getItemHlColor(item) : null;
+
+    if (currentColor) {
+        // 이미 하이라이트 → 제거
+        item.classList.remove(`hl-${currentColor}`);
         selectedVerses.delete(verseNum);
+        removeHighlight(verseNum);
     } else {
+        // 하이라이트 추가 (현재 활성 색상)
+        if (item) item.classList.add(`hl-${activeColor}`);
         selectedVerses.add(verseNum);
+        saveHighlight(verseNum, activeColor);
     }
     updateSelection();
 }
@@ -248,15 +376,17 @@ function clearSelection() {
     updateSelection();
 }
 
+// FAB 표시 여부만 제어 (선택 시각 표시는 hl-xxx 클래스로 대체)
 function updateSelection() {
-    versesContent.querySelectorAll('.verse-item').forEach(item => {
-        item.classList.toggle('selected', selectedVerses.has(parseInt(item.dataset.verse)));
-    });
     selectedVerses.size > 0 ? showFab() : hideFab();
 }
 
+// 팝업·선택 외부 클릭 처리
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('.verse-item') && !e.target.closest('.fab')) {
+    if (!e.target.closest('#hl-popup')) {
+        hideColorPicker();
+    }
+    if (!e.target.closest('.verse-item') && !e.target.closest('.fab') && !e.target.closest('#hl-popup')) {
         clearSelection();
     }
 });
@@ -323,6 +453,24 @@ function copyToClipboard(text) {
         showToast('클립보드에 복사되었습니다');
     });
 }
+
+// ===== 롱프레스 취소 (스크롤·손가락 이동 감지) =====
+document.addEventListener('pointermove', e => {
+    if (!longPressTimer) return;
+    if (Math.abs(e.clientX - longPressStartX) > 10 ||
+        Math.abs(e.clientY - longPressStartY) > 10) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+}, { passive: true });
+
+document.addEventListener('pointerup', () => {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+}, { passive: true });
+
+document.addEventListener('pointercancel', () => {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+}, { passive: true });
 
 // ===== 실행 =====
 init();

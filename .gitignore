@@ -1,2 +1,5 @@
 node_modules
 .env
+
+# Claude Token Monitor data
+.claude-monitor/

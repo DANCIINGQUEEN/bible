@@ -1,7 +1,7 @@
 # 📖 개역개정 성경 웹앱 — 개발 내역 보고서
 
 > **프로젝트명:** bible-app (개역개정 성경)  
-> **작성일:** 2026-03-03  
+> **최종 수정일:** 2026-03-03  
 > **기술 스택:** Node.js · Express · MongoDB Atlas · Vanilla JS · CSS · PWA  
 > **배포 환경:** Vercel (Serverless)
 
@@ -46,28 +46,28 @@
 
 ```
 project4_bible_app/
-├── server.js              # Express 서버 (API + 정적 파일 서빙)
+├── server.js              # Express 서버 (API + 정적 파일 서빙, 208줄)
 ├── package.json           # 프로젝트 메타데이터 및 의존성
 ├── vercel.json            # Vercel 배포 설정
 ├── .env                   # 환경 변수 (MongoDB URI, Firebase)
-├── .gitignore             # Git 제외 파일 (node_modules, .env)
+├── .gitignore             # Git 제외 파일
+├── .claudeignore          # Claude Code 제외 파일
+├── CLAUDE.md              # 프로젝트 컨텍스트 문서
 ├── icon.png               # 원본 아이콘 이미지
 │
-└── public/                # 정적 파일 (클라이언트)
-    ├── index.html          # 메인 HTML (SPA)
-    ├── app.js              # 클라이언트 JavaScript (964줄)
-    ├── style.css           # 스타일시트 (1,086줄)
-    ├── service-worker.js   # PWA 서비스 워커
+└── public/                # 정적 파일 (멀티페이지)
+    ├── index.html          # 성경 책 목록 (메인)
+    ├── chapters.html/js    # 장 목록
+    ├── verses.html/js      # 구절 보기
+    ├── hymns.html/js       # 찬송가 목록
+    ├── hymn.html/js        # 찬송가 악보 보기
+    ├── app.js              # SPA용 레거시 (현재 미사용)
+    ├── books.js            # 메인 페이지 탭/스와이프/책 목록 로직
+    ├── common.js           # 공통 유틸 (fetchJSON, 설정 패널, 토스트)
+    ├── style.css           # 전체 스타일 (1,086줄)
+    ├── service-worker.js   # PWA 서비스 워커 (v14)
     ├── manifest.json       # PWA 매니페스트
-    └── icons/              # PWA 아이콘 (8종)
-        ├── icon-72.png
-        ├── icon-96.png
-        ├── icon-128.png
-        ├── icon-144.png
-        ├── icon-152.png
-        ├── icon-192.png
-        ├── icon-384.png
-        └── icon-512.png
+    └── icons/              # PWA 아이콘 (72~512px, 8종)
 ```
 
 ---
@@ -76,44 +76,38 @@ project4_bible_app/
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  CLIENT (Browser)                                       │
-│  ┌────────┐  ┌────────┐  ┌─────────────────┐          │
-│  │  HTML   │  │  CSS   │  │   app.js (SPA)  │          │
-│  │  (SPA)  │  │ Themes │  │  State Machine  │          │
-│  └────────┘  └────────┘  └────────┬────────┘          │
-│                                    │ fetch()            │
-│  ┌────────────────────────────────┐│                   │
-│  │  Service Worker (캐시 전략)     ││                   │
-│  │  - 정적: Cache First           ││                   │
-│  │  - API: Network First          ││                   │
-│  └────────────────────────────────┘│                   │
-└────────────────────────────────────┼───────────────────┘
-                                     │ HTTPS
-┌────────────────────────────────────┼───────────────────┐
-│  SERVER (Vercel Serverless)        │                   │
-│  ┌─────────────────────────────────▼─────────────────┐ │
-│  │  Express.js                                        │ │
-│  │  ├─ Helmet (보안 헤더)                              │ │
-│  │  ├─ CORS (출처 제한)                               │ │
-│  │  ├─ Rate Limiter (100req/min)                     │ │
-│  │  ├─ Slow Down (80req 이후 지연)                    │ │
-│  │  └─ Static Files (public/)                        │ │
-│  └─────────────────────────────────┬─────────────────┘ │
-└────────────────────────────────────┼───────────────────┘
-                                     │
-         ┌───────────────────────────┼───────────────────┐
-         │                           │                    │
-    ┌────▼─────┐             ┌──────▼───────┐           │
-    │ MongoDB  │             │   Firebase    │           │
-    │  Atlas   │             │   Storage     │           │
-    │          │             │               │           │
-    │ bible_db │             │ 찬송가 악보    │           │
-    │ └ verses │             │ 이미지 (JPG)  │           │
-    │          │             │               │           │
-    │ Hymn     │             │               │           │
-    │ └ hymns  │             │               │           │
-    └──────────┘             └───────────────┘           │
-         └───────────────────────────────────────────────┘
+│  CLIENT (Browser) — 멀티페이지 아키텍처                   │
+│  ┌────────────────────────────────────────────┐         │
+│  │  index.html    chapters.html    verses.html │         │
+│  │  hymns.html    hymn.html                    │         │
+│  │  + books.js / chapters.js / verses.js 등    │         │
+│  │  + common.js (공통 유틸)                     │         │
+│  └────────────────────┬───────────────────────┘         │
+│                        │ fetch()                         │
+│  ┌────────────────────┐│                                │
+│  │  Service Worker v14 ││                                │
+│  │  정적: Cache First  ││                                │
+│  │  API: Network First ││                                │
+│  │  외부: 패스스루      ││                                │
+│  └────────────────────┘│                                │
+└────────────────────────┼────────────────────────────────┘
+                         │ HTTPS
+┌────────────────────────┼────────────────────────────────┐
+│  SERVER (Vercel)       │                                │
+│  ┌─────────────────────▼──────────────────────────────┐ │
+│  │  Express.js                                         │ │
+│  │  Helmet → CORS → Rate Limit → Slow Down → Router   │ │
+│  └─────────────────────┬──────────────────────────────┘ │
+└────────────────────────┼────────────────────────────────┘
+         ┌───────────────┼───────────────┐
+    ┌────▼─────┐              ┌─────────▼──┐
+    │ MongoDB  │              │  Firebase   │
+    │  Atlas   │              │  Storage    │
+    │ bible_db │              │ 찬송가 악보  │
+    │ └ verses │              │ JPG (645곡) │
+    │ Hymn     │              │             │
+    │ └ hymns  │              │             │
+    └──────────┘              └─────────────┘
 ```
 
 ---
@@ -174,22 +168,23 @@ hymnDb = hymnClient.db('Hymn');      // 컬렉션: hymns
 
 ## 5. 프론트엔드 (클라이언트)
 
-### 5.1 SPA (Single Page Application)
+### 5.1 멀티페이지 아키텍처 (MPA)
 
-**프레임워크 없이(Vanilla JS)** SPA를 구현했습니다. 5개의 뷰를 CSS `display` 속성으로 전환합니다:
+**프레임워크 없이(Vanilla JS)** 멀티페이지로 구현했습니다. 각 페이지별 독립 HTML/JS 파일:
 
 ```
 ┌──────────────────────┐
-│     books-view       │  ← 책 목록 (구약/신약/찬송가 탭)
+│  index.html          │  ← 책 목록 (구약/신약/찬송가 탭) + books.js
 ├──────────────────────┤
-│    chapters-view     │  ← 장 선택 그리드
+│  chapters.html       │  ← 장 선택 그리드 + chapters.js
 ├──────────────────────┤
-│     verses-view      │  ← 구절 읽기
+│  verses.html         │  ← 구절 읽기 + verses.js
 ├──────────────────────┤
-│     hymns-view       │  ← 찬송가 목록 (미사용, books-view 내 hymn-mode로 대체)
+│  hymns.html          │  ← 찬송가 목록 + hymns.js
 ├──────────────────────┤
-│  hymn-detail-view    │  ← 찬송가 악보 상세
+│  hymn.html           │  ← 찬송가 악보 상세 + hymn.js
 └──────────────────────┘
+  + common.js (공통: fetchJSON, 설정 패널, 토스트)
 ```
 
 ### 5.2 상태 관리
@@ -216,12 +211,15 @@ const state = {
 ```
 [책 목록] ──클릭──▶ [장 선택] ──클릭──▶ [구절 읽기]
     │                  ▲                    │
-    │               ◀──뒤로 버튼──────────────┘
+    │            history.back() ◀────────────┘
     │
     │──찬송가 탭──▶ [찬송가 목록] ──클릭──▶ [찬송가 상세]
                         ▲                     │
-                     ◀──뒤로 버튼──────────────┘
+                   history.back() ◀────────────┘
 ```
+
+> **주의**: 뒤로가기는 반드시 `history.back()` 사용. `window.location.href`는 히스토리 엔트리를 추가하여 스택을 오염시킴.
+> 장(chapter) 간 이동은 `history.replaceState`로 URL만 변경 (히스토리 추가 안 함).
 
 ### 5.4 데이터 캐싱 & 프리페치
 
@@ -305,7 +303,7 @@ prefetchChapter(bookIndex, chapter + 1);
 - **8종 아이콘**: 72, 96, 128, 144, 152, 192, 384, 512px
 - `purpose: "any maskable"` (192, 512px)
 
-### 6.2 서비스 워커 (`service-worker.js`)
+### 6.2 서비스 워커 (`service-worker.js`, 현재 v14)
 
 **캐시 전략:**
 
@@ -318,7 +316,9 @@ prefetchChapter(bookIndex, chapter + 1);
 **사전 캐시 리소스:**
 ```javascript
 const PRECACHE_ASSETS = [
-    '/', '/index.html', '/style.css', '/app.js',
+    '/', '/index.html', '/chapters.html', '/verses.html',
+    '/hymns.html', '/hymn.html', '/style.css', '/common.js',
+    '/books.js', '/chapters.js', '/verses.js', '/hymns.js', '/hymn.js',
     '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png',
 ];
 ```
@@ -326,6 +326,7 @@ const PRECACHE_ASSETS = [
 **핵심 설계 결정:**
 - 외부 origin 요청(Firebase Storage 등)은 SW가 개입하지 않습니다
 - 이 결정은 모바일 Safari/Samsung Internet에서 이미지 로딩 실패 문제를 해결하기 위해 내려졌습니다
+- 정적 파일 수정 시 반드시 `CACHE_NAME` 버전을 올려야 브라우저에 반영됩니다
 
 ---
 
@@ -536,6 +537,11 @@ contentSecurityPolicy: {
 | **2026-02-22 (저녁)** | 찬송가 악보 다운로더 개발 (Python + requests) |
 | **2026-02-22~23** | Selenium Edge 브라우저로 645곡 악보 다운로드 완료 |
 | **2026-02-23** | 찬송가 이미지 로딩 문제 해결 — CSP 설정, SW 외부 요청 패스스루, 재시도 로직 |
+| **2026-03-03** | SPA → 멀티페이지 아키텍처 전환 완료 (index/chapters/verses/hymns/hymn) |
+| **2026-03-03** | `.claudeignore`, `CLAUDE.md` 생성 |
+| **2026-03-03** | 스와이프 시 설정아이콘 밀림 버그 수정 (overflow-x: hidden 적용) |
+| **2026-03-03** | 뒤로가기 히스토리 버그 수정 (verses.js → history.back()) |
+| **2026-03-03** | Service Worker 캐시 v13 → v14 갱신 |
 
 ---
 

@@ -91,28 +91,29 @@ function renderCarousel() {
         });
         hymnCarousel.appendChild(btn);
     }
-    requestAnimationFrame(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
         const activeBtn = hymnCarousel.querySelector('.chapter-carousel-btn.active');
         if (!activeBtn) return;
         hymnCarousel.scrollTo({
             left: activeBtn.offsetLeft - hymnCarousel.offsetWidth / 2 + activeBtn.offsetWidth / 2,
-            behavior: 'smooth',
+            behavior: 'instant', // 초기 렌더링: 즉시 이동
         });
-    });
+    }));
 }
 
-function updateCarouselActive() {
+function updateCarouselActive(chapter = currentChapter) {
     hymnCarousel.querySelectorAll('.chapter-carousel-btn').forEach(btn => {
-        btn.classList.toggle('active', parseInt(btn.dataset.chapter) === currentChapter);
+        btn.classList.toggle('active', parseInt(btn.dataset.chapter) === chapter);
     });
-    requestAnimationFrame(() => {
+    // double rAF: 클래스 변경 후 레이아웃이 확정된 뒤 scroll 측정
+    requestAnimationFrame(() => requestAnimationFrame(() => {
         const activeBtn = hymnCarousel.querySelector('.chapter-carousel-btn.active');
         if (!activeBtn) return;
         hymnCarousel.scrollTo({
             left: activeBtn.offsetLeft - hymnCarousel.offsetWidth / 2 + activeBtn.offsetWidth / 2,
             behavior: 'smooth',
         });
-    });
+    }));
 }
 
 // ===== 스크롤 시 캐러셀 숨기기 =====
@@ -170,11 +171,13 @@ document.getElementById('main').addEventListener('touchend', (e) => {
         if (dx < 0 && currentChapter < TOTAL_HYMNS) {
             hymnDetailContent.style.transform = `translateX(${-window.innerWidth}px)`;
             hymnDetailContent.style.opacity = '0';
+            updateCarouselActive(currentChapter + 1); // 스와이프 확정과 동기화
             setTimeout(() => loadHymn(currentChapter + 1), 250);
             return;
         } else if (dx > 0 && currentChapter > 1) {
             hymnDetailContent.style.transform = `translateX(${window.innerWidth}px)`;
             hymnDetailContent.style.opacity = '0';
+            updateCarouselActive(currentChapter - 1); // 스와이프 확정과 동기화
             setTimeout(() => loadHymn(currentChapter - 1), 250);
             return;
         }
