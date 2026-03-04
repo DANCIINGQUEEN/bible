@@ -235,7 +235,8 @@ function renderVerses() {
         // 탭: 현재 색상으로 형광펜 토글 + 공유 선택
         item.addEventListener('click', e => {
             e.stopPropagation();
-            if (longPressJustFired) { longPressJustFired = false; return; }
+            if (longPressJustFired) { longPressJustFired = false; hideColorPicker(); return; }
+            hideColorPicker();
             toggleVerse(verseNum);
         });
 

@@ -1,5 +1,5 @@
 // 성경 앱 Service Worker
-const CACHE_NAME = 'bible-app-v21'; // 형광펜 다색 지원 + 색상 선택 팝업
+const CACHE_NAME = 'bible-app-v22'; // 형광펜 팝업 외부 클릭 시 닫힘 수정
 
 // 사전 캐시할 정적 리소스
 const PRECACHE_ASSETS = [
