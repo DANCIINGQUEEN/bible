@@ -564,16 +564,7 @@ body {
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
   transition: transform 0.3s ease, opacity 0.3s ease;
-  -webkit-mask-image: linear-gradient(to right,
-      transparent 0%,
-      black 12%,
-      black 88%,
-      transparent 100%);
-  mask-image: linear-gradient(to right,
-      transparent 0%,
-      black 12%,
-      black 88%,
-      transparent 100%);
+  overflow: hidden;
 }
 
 .chapter-carousel-wrap.carousel-hidden {
@@ -595,6 +586,17 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
   scroll-snap-type: x mandatory;
+  /* 버튼만 edge에서 페이드, wrap 배경은 solid 유지 */
+  -webkit-mask-image: linear-gradient(to right,
+      transparent 0%,
+      black 12%,
+      black 88%,
+      transparent 100%);
+  mask-image: linear-gradient(to right,
+      transparent 0%,
+      black 12%,
+      black 88%,
+      transparent 100%);
 }
 
 .chapter-carousel::-webkit-scrollbar {
@@ -728,7 +730,7 @@ body {
 .verses-content {
   max-width: 720px;
   margin: 0 auto;
-  padding-top: 44px;
+  padding-top: 56px; /* carousel 실제 높이(8+36+8+1=53px) + 3px 여유 */
   padding-bottom: 80px;
 }
 
@@ -1000,6 +1002,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  grid-column: 1 / -1; /* 그리드 컨테이너 내에서 전체 너비 차지 */
   padding: 80px 20px;
   gap: 20px;
   color: var(--text-secondary);

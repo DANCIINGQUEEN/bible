@@ -1,5 +1,5 @@
 // 성경 앱 Service Worker
-const CACHE_NAME = 'bible-app-v14'; // history.back() 버그 수정 + 스와이프 고정
+const CACHE_NAME = 'bible-app-v17'; // verse-headline border 정렬 버그 수정
 
 // 사전 캐시할 정적 리소스
 const PRECACHE_ASSETS = [
