@@ -1,8 +1,8 @@
 # 📖 개역개정 성경 웹앱 — 개발 내역 보고서
 
-> **프로젝트명:** bible-app (개역개정 성경)  
-> **최종 수정일:** 2026-03-03  
-> **기술 스택:** Node.js · Express · MongoDB Atlas · Vanilla JS · CSS · PWA  
+> **프로젝트명:** bible-app (개역개정 성경)
+> **최종 수정일:** 2026-03-05
+> **기술 스택:** Node.js · Express · MongoDB Atlas · Vanilla JS · CSS · PWA
 > **배포 환경:** Vercel (Serverless)
 
 ---
@@ -64,8 +64,8 @@ project4_bible_app/
     ├── app.js              # SPA용 레거시 (현재 미사용)
     ├── books.js            # 메인 페이지 탭/스와이프/책 목록 로직
     ├── common.js           # 공통 유틸 (fetchJSON, 설정 패널, 토스트)
-    ├── style.css           # 전체 스타일 (1,086줄)
-    ├── service-worker.js   # PWA 서비스 워커 (v14)
+    ├── style.css           # 전체 스타일 (1,200+ 줄)
+    ├── service-worker.js   # PWA 서비스 워커 (v22)
     ├── manifest.json       # PWA 매니페스트
     └── icons/              # PWA 아이콘 (72~512px, 8종)
 ```
@@ -85,7 +85,7 @@ project4_bible_app/
 │  └────────────────────┬───────────────────────┘         │
 │                        │ fetch()                         │
 │  ┌────────────────────┐│                                │
-│  │  Service Worker v14 ││                                │
+│  │  Service Worker v22 ││                                │
 │  │  정적: Cache First  ││                                │
 │  │  API: Network First ││                                │
 │  │  외부: 패스스루      ││                                │
@@ -243,14 +243,65 @@ prefetchChapter(bookIndex, chapter + 1);
 - 임계값: 60px
 - 드래그 중 실시간 `translateX` + 투명도 변화
 - 화면 밖으로 날아가는 애니메이션 → 반대편에서 새 컨텐츠 슬라이드 인
-- `Reflow` 강제 발생으로 즉시 위치 초기화
+- 찬송가 탭은 별도 페이지 이동 없이 `index.html` 내 인라인 패널로 전환
+- `getActivePanel()` 로 현재 탭의 활성 패널 동적 반환
 
 #### ③ 찬송가 상세 스와이프 (좌우 → 이전/다음 찬송가)
 - 임계값: 60px
 - 첫 장/마지막 장에서 텐션(저항) 효과: `translateX(dx * 0.3)`
 - 오버스크롤 시 덜 밀리는 UX
 
-### 5.6 구절 선택 & 공유
+### 5.6 챕터 캐러셀 인디케이터
+
+구절 뷰 및 찬송가 상세 뷰 상단 캐러셀의 활성 인디케이터:
+
+- **초기 렌더링**: `behavior: 'instant'` — 처음 열릴 때 즉시 해당 장으로 이동 (애니메이션 없음)
+- **페이지 전환 시**: `behavior: 'smooth'` — 자연스러운 슬라이드 이동
+- **double rAF**: 클래스 변경 후 레이아웃 확정 뒤 scroll 측정 (정확한 center 계산)
+- **조기 업데이트**: 스와이프 확정 즉시 캐러셀 활성 버튼 변경 (250ms 지연 없음)
+- **transition 수정**: `transition: all` → 개별 속성 지정 (`font-weight` 제외) — 점프 현상 제거
+
+### 5.7 구절 형광펜
+
+```
+단일 탭 → 현재 활성 색상으로 형광펜 즉시 적용/해제
+길게 누르기(600ms) → 색상 선택 팝업 표시
+```
+
+**localStorage 스키마:**
+```json
+{
+  "bible-highlights": {
+    "1-1": { "1": "blue", "3": "yellow" },
+    "1-2": { "5": "pink" }
+  }
+}
+```
+- 키: `"bookIndex-chapter"`, 값: `{ "verseNum": "colorName" }`
+
+**지원 색상 5종:**
+
+| 색상 | 클래스 | RGB |
+|------|--------|-----|
+| 노랑 | `.hl-yellow` | `rgba(251, 191, 36, ...)` |
+| 초록 | `.hl-green` | `rgba(34, 197, 94, ...)` |
+| 분홍 | `.hl-pink` | `rgba(236, 72, 153, ...)` |
+| 파랑 | `.hl-blue` | `rgba(59, 130, 246, ...)` |
+| 보라 | `.hl-purple` | `rgba(168, 85, 247, ...)` |
+
+각 색상: 다크/라이트 모드 별도 정의, `inset box-shadow`로 왼쪽 바 표시
+
+**색상 선택 팝업:**
+- 화면 하단 중앙 고정, `.active` 클래스로 슬라이드업 애니메이션
+- 원형 색상 버튼 5개 + 지우기 버튼 (✕)
+- 색상 선택 후 자동 닫힘, 외부 탭 시 닫힘
+- 롱프레스 직후 `longPressJustFired` 플래그로 click 이벤트 충돌 방지
+
+**핵심 구현 이슈 — stopPropagation 문제:**
+
+`.verse-item` click 핸들러의 `e.stopPropagation()` 때문에 document click 이벤트가 도달하지 않아 팝업이 닫히지 않는 버그. `hideColorPicker()`를 click 핸들러 내 명시적으로 호출하여 해결.
+
+### 5.8 구절 선택 & 공유
 
 ```
 구절 클릭 → selectedVerses Set에 추가/제거
@@ -266,16 +317,17 @@ prefetchChapter(bookIndex, chapter + 1);
 - 비연속 구절: `창세기 1:1, 3, 5`
 - 본문 내용 포함
 
-### 5.7 챕터 캐러셀
+### 5.9 챕터 캐러셀
 
 구절 뷰와 찬송가 상세 뷰 상단에 **수평 스크롤 캐러셀**이 있습니다:
 
 - 현재 장/곡을 가운데로 자동 스크롤
 - 스크롤 방향 감지: 아래로 스크롤 시 숨김, 위로 스크롤 시 표시
 - `scroll-snap-type: x mandatory`로 스냅 포인트 적용
-- CSS 마스크로 좌우 끝 페이드 아웃 효과
+- CSS 마스크(`mask-image`)를 `.chapter-carousel`(내부 스크롤 영역)에만 적용 → 배경 투명도 문제 해결
+- `.chapter-carousel-wrap`에 `overflow: hidden` 적용
 
-### 5.8 챕터 네비게이션 바
+### 5.10 챕터 네비게이션 바
 
 구절 뷰 하단의 이전/다음 장 버튼:
 - 이전/다음 장 번호 표시
@@ -303,7 +355,7 @@ prefetchChapter(bookIndex, chapter + 1);
 - **8종 아이콘**: 72, 96, 128, 144, 152, 192, 384, 512px
 - `purpose: "any maskable"` (192, 512px)
 
-### 6.2 서비스 워커 (`service-worker.js`, 현재 v14)
+### 6.2 서비스 워커 (`service-worker.js`, 현재 v22)
 
 **캐시 전략:**
 
@@ -542,6 +594,13 @@ contentSecurityPolicy: {
 | **2026-03-03** | 스와이프 시 설정아이콘 밀림 버그 수정 (overflow-x: hidden 적용) |
 | **2026-03-03** | 뒤로가기 히스토리 버그 수정 (verses.js → history.back()) |
 | **2026-03-03** | Service Worker 캐시 v13 → v14 갱신 |
+| **2026-03-04** | 찬송가 탭 인라인 통합 — hymns.html 이동 제거, index.html 내 패널 전환 (SW v15→v17) |
+| **2026-03-04** | 로더 스피너 정렬 버그 수정 — Grid 컨테이너 내 `grid-column: 1/-1` 추가 |
+| **2026-03-04** | verse-headline 보더 정렬 버그 수정 — CSS mask를 `.chapter-carousel`로 이동, wrap에 overflow:hidden |
+| **2026-03-04** | 캐러셀 활성 인디케이터 스무스 전환 개선 — double rAF, 조기 업데이트, font-weight transition 제거 |
+| **2026-03-04** | 구절 형광펜 기능 추가 — 단일 탭 형광펜, localStorage 영구 저장 (SW v18→v20) |
+| **2026-03-05** | 형광펜 다색 지원 — 5색(노랑/초록/분홍/파랑/보라) + 색상 선택 팝업 (SW v21) |
+| **2026-03-05** | 형광펜 팝업 외부 클릭 닫힘 버그 수정 — stopPropagation 충돌 해결 (SW v22) |
 
 ---
 
@@ -576,13 +635,15 @@ contentSecurityPolicy: {
 
 ## 14. 향후 개선 사항
 
+- [x] ~~메모/하이라이트 기능~~ — 완료 (다색 형광펜 + 색상 선택 팝업)
 - [ ] 북마크/즐겨찾기 기능
-- [ ] 성경 검색 기능 (전문 검색)
-- [ ] 읽기 기록 추적
+- [ ] 성경 구절 검색 기능 (키워드 전문 검색)
+- [ ] 최근 읽은 곳 기억 (마지막 책/장 자동 복원)
+- [ ] 형광펜 모아보기 페이지 (내가 칠한 구절 전체 목록)
+- [ ] 말씀 노트 (구절에 개인 메모 추가)
 - [ ] 오프라인 성경 데이터 완전 캐싱
-- [ ] 찬송가 가사 텍스트 검색
+- [ ] 오늘의 말씀 (날짜별/랜덤 구절 표시)
 - [ ] 다국어 성경 지원
-- [ ] 메모/하이라이트 기능
 
 ---
 

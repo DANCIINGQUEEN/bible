@@ -100,7 +100,7 @@ npm run dev   # node server.js (포트 3000)
 ```
 
 ## 주의사항
-- 정적 파일 수정 시 `service-worker.js`의 `CACHE_NAME` 버전을 반드시 올려야 반영됨 (현재 v17)
+- 정적 파일 수정 시 `service-worker.js`의 `CACHE_NAME` 버전을 반드시 올려야 반영됨 (현재 v22)
 - `window.location.href`는 히스토리 엔트리를 추가하므로 뒤로가기에는 `history.back()` 사용
 - 스와이프 시 `overflow-x: hidden`이 html, body, #app 모두에 필요 (fixed 요소 밀림 방지)
 - 외부 origin 요청(Firebase)은 SW 패스스루 (모바일 이미지 로딩 호환성)
@@ -114,4 +114,7 @@ npm run dev   # node server.js (포트 3000)
 | 2026-02-23 | 찬송가 이미지 로딩 문제 해결 (CSP, SW 패스스루) |
 | 2026-03-03 | .claudeignore/CLAUDE.md 생성, 스와이프 버그 수정, 히스토리 버그 수정, SW v14 |
 | 2026-03-04 | 찬송가 탭 인라인 패널화 (index.html 내 통합), 탭바 연속성 유지, SW v15 |
+| 2026-03-04 | 로더 정렬 버그, headline 보더 버그 수정, 캐러셀 인디케이터 스무스 개선 |
+| 2026-03-04 | 구절 형광펜 기능 추가 (localStorage, 길게 누르기), SW v20 |
+| 2026-03-05 | 형광펜 5색 + 색상 선택 팝업, 팝업 외부 클릭 닫힘 버그 수정, SW v22 |
 
