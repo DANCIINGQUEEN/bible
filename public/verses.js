@@ -131,6 +131,7 @@ document.getElementById('back-btn').addEventListener('click', () => {
 // ===== 초기화 =====
 async function init() {
     initSettingsPanel(versesContent);
+    requestWakeLock(); // [PWA] 페이지 진입 시 초기 Wake Lock 요청
 
     try {
         const [books, chapters] = await Promise.all([
@@ -155,6 +156,13 @@ async function init() {
 // ===== 구절 로드 =====
 async function loadVerses(chapter, direction) {
     currentChapter = chapter;
+
+    // [Logic] 장 이동 즉시: 선택 상태·DOM 초기화 (이전 장 하이라이트 잔상 방지)
+    selectedVerses.clear();
+    versesContent.innerHTML = '';
+    hideColorPicker();
+    updateSelection();
+
     headerTitle.textContent = `${bookName} ${chapter}장`;
     document.title = `${bookName} ${chapter}장 | 개역개정 성경`;
     history.replaceState(null, '', `/verses.html?book=${bookIndex}&chapter=${chapter}`);
@@ -472,6 +480,36 @@ document.addEventListener('pointerup', () => {
 document.addEventListener('pointercancel', () => {
     if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 }, { passive: true });
+
+// ===== Wake Lock (PWA Guardian) =====
+let wakeLockSentinel = null;
+
+async function requestWakeLock() {
+    if (!('wakeLock' in navigator) || !settings.wakeLock) return;
+    try {
+        wakeLockSentinel = await navigator.wakeLock.request('screen');
+        wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
+    } catch { /* 권한 거부 또는 미지원 무시 */ }
+}
+
+function releaseWakeLock() {
+    if (wakeLockSentinel) {
+        wakeLockSentinel.release();
+        wakeLockSentinel = null;
+    }
+}
+
+// 백그라운드 → 포그라운드 복귀 시 Lock 재요청
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && settings.wakeLock) {
+        requestWakeLock();
+    }
+});
+
+// 설정 패널 토글 시 on/off 처리
+window.addEventListener('settingsWakeLockChange', (e) => {
+    e.detail ? requestWakeLock() : releaseWakeLock();
+});
 
 // ===== 실행 =====
 init();

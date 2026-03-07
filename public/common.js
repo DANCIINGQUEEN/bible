@@ -42,6 +42,8 @@ const settings = {
     bold: localStorage.getItem('bible-bold') === 'true',
     fontFamily: localStorage.getItem('bible-fontFamily') || 'serif',
     bottomAlign: localStorage.getItem('bible-bottomAlign') === 'true',
+    wakeLock: localStorage.getItem('bible-wakeLock') === 'true',                      // [PWA] 화면 꺼짐 방지
+    contentWidth: parseInt(localStorage.getItem('bible-contentWidth')) || 95,         // [UI/UX] 본문 폭 (80~100)
 };
 
 // textEl: 글자 크기/굵기/폰트를 적용할 DOM 요소 (verses-content 등). null이면 생략.
@@ -54,6 +56,9 @@ function applySettings(textEl) {
     const bottomAlignToggle = document.getElementById('bottom-align-toggle');
     const fontSizeValue = document.getElementById('font-size-value');
     const fontFamilyOptions = document.getElementById('font-family-options');
+    const wakeLockToggle = document.getElementById('wake-lock-toggle');
+    const contentWidthSlider = document.getElementById('content-width-slider');
+    const contentWidthValue = document.getElementById('content-width-value');
 
     if (themeToggle) themeToggle.classList.toggle('active', settings.theme === 'dark');
     if (boldToggle) boldToggle.classList.toggle('active', settings.bold);
@@ -64,6 +69,12 @@ function applySettings(textEl) {
             btn.classList.toggle('active', btn.dataset.font === settings.fontFamily);
         });
     }
+    // [PWA] Wake Lock 토글 상태 반영
+    if (wakeLockToggle) wakeLockToggle.classList.toggle('active', settings.wakeLock);
+    // [UI/UX] 본문 폭 슬라이더 값·레이블·CSS 변수 실시간 반영
+    if (contentWidthSlider) contentWidthSlider.value = settings.contentWidth;
+    if (contentWidthValue) contentWidthValue.textContent = settings.contentWidth + '%';
+    document.documentElement.style.setProperty('--verse-padding', ((100 - settings.contentWidth) / 2) + '%');
 
     if (textEl) {
         textEl.style.fontSize = settings.fontSize + 'px';
@@ -78,6 +89,8 @@ function saveSettings() {
     localStorage.setItem('bible-bold', settings.bold);
     localStorage.setItem('bible-fontFamily', settings.fontFamily);
     localStorage.setItem('bible-bottomAlign', settings.bottomAlign);
+    localStorage.setItem('bible-wakeLock', settings.wakeLock);       // [PWA]
+    localStorage.setItem('bible-contentWidth', settings.contentWidth); // [UI/UX]
 }
 
 // 설정 패널 HTML을 #app에 삽입하고 이벤트 바인딩
@@ -128,6 +141,20 @@ function initSettingsPanel(textEl) {
             <button id="bottom-align-toggle" class="toggle-switch" aria-label="하단 정렬 토글">
               <span class="toggle-knob"></span>
             </button>
+          </div>
+          <div class="settings-item">
+            <span class="settings-label">화면 꺼짐 방지</span>
+            <button id="wake-lock-toggle" class="toggle-switch" aria-label="화면 꺼짐 방지 토글">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+          <div class="settings-item settings-item-col">
+            <div class="settings-row-between">
+              <span class="settings-label">본문 폭</span>
+              <span id="content-width-value" class="size-value">95%</span>
+            </div>
+            <input type="range" id="content-width-slider" class="width-slider"
+              min="80" max="100" step="1" value="95" aria-label="본문 폭 조절">
           </div>
         </div>
     `;
@@ -185,6 +212,23 @@ function initSettingsPanel(textEl) {
     });
     bottomAlignToggle.addEventListener('click', () => {
         settings.bottomAlign = !settings.bottomAlign;
+        applySettings(textEl);
+        saveSettings();
+    });
+
+    // [PWA] 화면 꺼짐 방지 토글 — 변경 시 verses.js로 CustomEvent 전달
+    const wakeLockToggle = document.getElementById('wake-lock-toggle');
+    const contentWidthSlider = document.getElementById('content-width-slider');
+    wakeLockToggle.addEventListener('click', () => {
+        settings.wakeLock = !settings.wakeLock;
+        applySettings(textEl);
+        saveSettings();
+        window.dispatchEvent(new CustomEvent('settingsWakeLockChange', { detail: settings.wakeLock }));
+    });
+
+    // [UI/UX] 본문 폭 슬라이더 — input 이벤트로 실시간 반영
+    contentWidthSlider.addEventListener('input', () => {
+        settings.contentWidth = parseInt(contentWidthSlider.value);
         applySettings(textEl);
         saveSettings();
     });

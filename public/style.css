@@ -23,6 +23,7 @@
   --radius-lg: 16px;
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --verse-padding: 0%;   /* [UI/UX] 본문 폭 — JS에서 슬라이더로 실시간 조절 */
 }
 
 /* ===== Light Mode ===== */
@@ -266,6 +267,46 @@ body {
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
+}
+
+.settings-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* [UI/UX] 본문 폭 슬라이더 */
+.width-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-secondary);
+  outline: none;
+  cursor: pointer;
+}
+
+.width-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.width-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 .settings-label {
@@ -734,6 +775,8 @@ body {
   margin: 0 auto;
   padding-top: 56px; /* carousel 실제 높이(8+36+8+1=53px) + 3px 여유 */
   padding-bottom: 80px;
+  padding-left: var(--verse-padding);   /* [UI/UX] 본문 폭 조절 */
+  padding-right: var(--verse-padding);
 }
 
 .verse-headline {
