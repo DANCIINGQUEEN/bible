@@ -78,6 +78,8 @@ public/
 | 굵기 | `bible-bold` | `false` | on/off |
 | 글씨체 | `bible-fontFamily` | `serif` | 명조/고딕/프리텐다드 |
 | 하단 정렬 | `bible-bottomAlign` | `false` | on/off |
+| 화면 꺼짐 방지 | `bible-wakeLock` | `false` | on/off |
+| 본문 폭 | `bible-contentWidth` | `95` | 80~100% |
 
 ## 보안 미들웨어
 Helmet(CSP) → CORS → Body Limit(10kb) → Rate Limit(100req/min) → Slow Down(80req 이후 지연)
@@ -100,7 +102,7 @@ npm run dev   # node server.js (포트 3000)
 ```
 
 ## 주의사항
-- 정적 파일 수정 시 `service-worker.js`의 `CACHE_NAME` 버전을 반드시 올려야 반영됨 (현재 v22)
+- 정적 파일 수정 시 `service-worker.js`의 `CACHE_NAME` 버전을 반드시 올려야 반영됨 (현재 v23)
 - `window.location.href`는 히스토리 엔트리를 추가하므로 뒤로가기에는 `history.back()` 사용
 - 스와이프 시 `overflow-x: hidden`이 html, body, #app 모두에 필요 (fixed 요소 밀림 방지)
 - 외부 origin 요청(Firebase)은 SW 패스스루 (모바일 이미지 로딩 호환성)
@@ -117,4 +119,5 @@ npm run dev   # node server.js (포트 3000)
 | 2026-03-04 | 로더 정렬 버그, headline 보더 버그 수정, 캐러셀 인디케이터 스무스 개선 |
 | 2026-03-04 | 구절 형광펜 기능 추가 (localStorage, 길게 누르기), SW v20 |
 | 2026-03-05 | 형광펜 5색 + 색상 선택 팝업, 팝업 외부 클릭 닫힘 버그 수정, SW v22 |
+| 2026-03-07 | 하이라이트 잔상 버그 수정(loadVerses 즉시 초기화), Wake Lock(화면 꺼짐 방지), 본문 폭 슬라이더(--verse-padding), SW v23 |
 

@@ -1,7 +1,7 @@
 # 📖 개역개정 성경 웹앱 — 개발 내역 보고서
 
 > **프로젝트명:** bible-app (개역개정 성경)
-> **최종 수정일:** 2026-03-05
+> **최종 수정일:** 2026-03-07
 > **기술 스택:** Node.js · Express · MongoDB Atlas · Vanilla JS · CSS · PWA
 > **배포 환경:** Vercel (Serverless)
 
@@ -65,7 +65,7 @@ project4_bible_app/
     ├── books.js            # 메인 페이지 탭/스와이프/책 목록 로직
     ├── common.js           # 공통 유틸 (fetchJSON, 설정 패널, 토스트)
     ├── style.css           # 전체 스타일 (1,200+ 줄)
-    ├── service-worker.js   # PWA 서비스 워커 (v22)
+    ├── service-worker.js   # PWA 서비스 워커 (v23)
     ├── manifest.json       # PWA 매니페스트
     └── icons/              # PWA 아이콘 (72~512px, 8종)
 ```
@@ -85,7 +85,7 @@ project4_bible_app/
 │  └────────────────────┬───────────────────────┘         │
 │                        │ fetch()                         │
 │  ┌────────────────────┐│                                │
-│  │  Service Worker v22 ││                                │
+│  │  Service Worker v23 ││                                │
 │  │  정적: Cache First  ││                                │
 │  │  API: Network First ││                                │
 │  │  외부: 패스스루      ││                                │
@@ -261,7 +261,24 @@ prefetchChapter(bookIndex, chapter + 1);
 - **조기 업데이트**: 스와이프 확정 즉시 캐러셀 활성 버튼 변경 (250ms 지연 없음)
 - **transition 수정**: `transition: all` → 개별 속성 지정 (`font-weight` 제외) — 점프 현상 제거
 
-### 5.7 구절 형광펜
+### 5.7 구절 폭 조절
+
+`--verse-padding` CSS 변수를 통해 구절 본문의 좌우 여백을 실시간으로 조절합니다.
+
+```javascript
+// 슬라이더 값(80~100%) → CSS 변수 반영
+document.documentElement.style.setProperty(
+    '--verse-padding', ((100 - settings.contentWidth) / 2) + '%'
+);
+```
+
+- `.verses-content`의 `padding-left/right`에 `var(--verse-padding)` 적용
+- `localStorage`에 저장되어 새로고침 후에도 유지
+- `applySettings()` 호출 시마다 동기화
+
+---
+
+### 5.8 구절 형광펜
 
 ```
 단일 탭 → 현재 활성 색상으로 형광펜 즉시 적용/해제
@@ -301,7 +318,7 @@ prefetchChapter(bookIndex, chapter + 1);
 
 `.verse-item` click 핸들러의 `e.stopPropagation()` 때문에 document click 이벤트가 도달하지 않아 팝업이 닫히지 않는 버그. `hideColorPicker()`를 click 핸들러 내 명시적으로 호출하여 해결.
 
-### 5.8 구절 선택 & 공유
+### 5.9 구절 선택 & 공유
 
 ```
 구절 클릭 → selectedVerses Set에 추가/제거
@@ -317,7 +334,7 @@ prefetchChapter(bookIndex, chapter + 1);
 - 비연속 구절: `창세기 1:1, 3, 5`
 - 본문 내용 포함
 
-### 5.9 챕터 캐러셀
+### 5.10 챕터 캐러셀
 
 구절 뷰와 찬송가 상세 뷰 상단에 **수평 스크롤 캐러셀**이 있습니다:
 
@@ -327,7 +344,7 @@ prefetchChapter(bookIndex, chapter + 1);
 - CSS 마스크(`mask-image`)를 `.chapter-carousel`(내부 스크롤 영역)에만 적용 → 배경 투명도 문제 해결
 - `.chapter-carousel-wrap`에 `overflow: hidden` 적용
 
-### 5.10 챕터 네비게이션 바
+### 5.11 챕터 네비게이션 바
 
 구절 뷰 하단의 이전/다음 장 버튼:
 - 이전/다음 장 번호 표시
@@ -355,7 +372,7 @@ prefetchChapter(bookIndex, chapter + 1);
 - **8종 아이콘**: 72, 96, 128, 144, 152, 192, 384, 512px
 - `purpose: "any maskable"` (192, 512px)
 
-### 6.2 서비스 워커 (`service-worker.js`, 현재 v22)
+### 6.2 서비스 워커 (`service-worker.js`, 현재 v23)
 
 **캐시 전략:**
 
@@ -379,6 +396,27 @@ const PRECACHE_ASSETS = [
 - 외부 origin 요청(Firebase Storage 등)은 SW가 개입하지 않습니다
 - 이 결정은 모바일 Safari/Samsung Internet에서 이미지 로딩 실패 문제를 해결하기 위해 내려졌습니다
 - 정적 파일 수정 시 반드시 `CACHE_NAME` 버전을 올려야 브라우저에 반영됩니다
+
+### 6.3 Wake Lock (화면 꺼짐 방지)
+
+`navigator.wakeLock` API를 사용해 성경 읽기 중 화면이 꺼지지 않도록 합니다.
+
+```javascript
+// 설정 ON 시 Lock 획득
+wakeLockSentinel = await navigator.wakeLock.request('screen');
+
+// 백그라운드 → 포그라운드 복귀 시 자동 재요청
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && settings.wakeLock) {
+        requestWakeLock();
+    }
+});
+```
+
+- `verses.js`에서만 활성화 (구절 읽기 페이지 전용)
+- 미지원 브라우저(구버전 Samsung Internet 등) 안전 무시
+- 설정 패널 토글 → `CustomEvent('settingsWakeLockChange')` → verses.js 수신 구조
+- 기본값 `false` (사용자가 명시적으로 활성화해야 함)
 
 ---
 
@@ -438,6 +476,8 @@ newImg.onerror = () => {
 | 굵은 글씨 | `bible-bold` | `false` | on/off |
 | 글씨체 | `bible-fontFamily` | `serif` | 명조체 / 고딕체 / 프리텐다드 |
 | 하단 정렬 | `bible-bottomAlign` | `false` | on/off |
+| 화면 꺼짐 방지 | `bible-wakeLock` | `false` | on/off |
+| 본문 폭 | `bible-contentWidth` | `95` | 80 ~ 100% (range 슬라이더) |
 
 ### 8.2 글씨체 매핑
 
@@ -601,6 +641,10 @@ contentSecurityPolicy: {
 | **2026-03-04** | 구절 형광펜 기능 추가 — 단일 탭 형광펜, localStorage 영구 저장 (SW v18→v20) |
 | **2026-03-05** | 형광펜 다색 지원 — 5색(노랑/초록/분홍/파랑/보라) + 색상 선택 팝업 (SW v21) |
 | **2026-03-05** | 형광펜 팝업 외부 클릭 닫힘 버그 수정 — stopPropagation 충돌 해결 (SW v22) |
+| **2026-03-07** | 하이라이트 잔상 버그 수정 — `loadVerses` 진입 즉시 `selectedVerses.clear()` + `innerHTML = ''` |
+| **2026-03-07** | Wake Lock 기능 추가 — `navigator.wakeLock` API, `visibilitychange` 포그라운드 복귀 재요청 |
+| **2026-03-07** | 본문 폭 조절 슬라이더 추가 — `--verse-padding` CSS 변수, 80~100% range input (SW v23) |
+| **2026-03-07** | 에이전트 시스템 도입 — `.claude/agents/` 역할군별 에이전트 5종 (Orchestrator, Architect, Logic, UI/UX, PWA, Tester) |
 
 ---
 
@@ -636,6 +680,8 @@ contentSecurityPolicy: {
 ## 14. 향후 개선 사항
 
 - [x] ~~메모/하이라이트 기능~~ — 완료 (다색 형광펜 + 색상 선택 팝업)
+- [x] ~~화면 꺼짐 방지~~ — 완료 (Wake Lock API, 설정 패널 토글)
+- [x] ~~본문 폭 조절~~ — 완료 (range 슬라이더, CSS 변수 실시간 반영)
 - [ ] 북마크/즐겨찾기 기능
 - [ ] 성경 구절 검색 기능 (키워드 전문 검색)
 - [ ] 최근 읽은 곳 기억 (마지막 책/장 자동 복원)
