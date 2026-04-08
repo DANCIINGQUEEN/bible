@@ -112,6 +112,7 @@ app.get('/api/books', async (req, res) => {
                 }
             }
         ]).toArray();
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
         res.json(books);
     } catch (err) {
         res.status(500).json({ error: '서버 오류가 발생했습니다.' });
@@ -130,6 +131,7 @@ app.get('/api/books/:bookIndex/chapters', async (req, res) => {
             { $sort: { _id: 1 } },
             { $project: { _id: 0, chapter: '$_id' } }
         ]).toArray();
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
         res.json(chapters);
     } catch (err) {
         res.status(500).json({ error: '서버 오류가 발생했습니다.' });
@@ -147,6 +149,7 @@ app.get('/api/books/:bookIndex/chapters/:chapter', async (req, res) => {
             .find({ bookIndex, chapter })
             .sort({ verse: 1 })
             .toArray();
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
         res.json(verses);
     } catch (err) {
         res.status(500).json({ error: '서버 오류가 발생했습니다.' });
@@ -162,6 +165,7 @@ app.get('/api/hymns', async (req, res) => {
             .find({}, { projection: { _id: 0, chapter: 1 } })
             .sort({ chapter: 1 })
             .toArray();
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
         res.json(hymns);
     } catch (err) {
         res.status(500).json({ error: '서버 오류가 발생했습니다.' });
@@ -179,6 +183,7 @@ app.get('/api/hymns/:chapter', async (req, res) => {
             { projection: { _id: 0 } }
         );
         if (!hymn) return res.status(404).json({ error: '찬송가를 찾을 수 없습니다.' });
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
         res.json(hymn);
     } catch (err) {
         res.status(500).json({ error: '서버 오류가 발생했습니다.' });
